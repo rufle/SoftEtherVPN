@@ -1,90 +1,5 @@
-// SoftEther VPN Source Code
+// SoftEther VPN Source Code - Developer Edition Master Branch
 // Cedar Communication Module
-// 
-// SoftEther VPN Server, Client and Bridge are free software under GPLv2.
-// 
-// Copyright (c) 2012-2014 Daiyuu Nobori.
-// Copyright (c) 2012-2014 SoftEther VPN Project, University of Tsukuba, Japan.
-// Copyright (c) 2012-2014 SoftEther Corporation.
-// 
-// All Rights Reserved.
-// 
-// http://www.softether.org/
-// 
-// Author: Daiyuu Nobori
-// Comments: Tetsuo Sugiyama, Ph.D.
-// 
-// 
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License
-// version 2 as published by the Free Software Foundation.
-// 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU General Public License for more details.
-// 
-// You should have received a copy of the GNU General Public License version 2
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-// IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-// CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-// TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-// SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-// 
-// THE LICENSE AGREEMENT IS ATTACHED ON THE SOURCE-CODE PACKAGE
-// AS "LICENSE.TXT" FILE. READ THE TEXT FILE IN ADVANCE TO USE THE SOFTWARE.
-// 
-// 
-// THIS SOFTWARE IS DEVELOPED IN JAPAN, AND DISTRIBUTED FROM JAPAN,
-// UNDER JAPANESE LAWS. YOU MUST AGREE IN ADVANCE TO USE, COPY, MODIFY,
-// MERGE, PUBLISH, DISTRIBUTE, SUBLICENSE, AND/OR SELL COPIES OF THIS
-// SOFTWARE, THAT ANY JURIDICAL DISPUTES WHICH ARE CONCERNED TO THIS
-// SOFTWARE OR ITS CONTENTS, AGAINST US (SOFTETHER PROJECT, SOFTETHER
-// CORPORATION, DAIYUU NOBORI OR OTHER SUPPLIERS), OR ANY JURIDICAL
-// DISPUTES AGAINST US WHICH ARE CAUSED BY ANY KIND OF USING, COPYING,
-// MODIFYING, MERGING, PUBLISHING, DISTRIBUTING, SUBLICENSING, AND/OR
-// SELLING COPIES OF THIS SOFTWARE SHALL BE REGARDED AS BE CONSTRUED AND
-// CONTROLLED BY JAPANESE LAWS, AND YOU MUST FURTHER CONSENT TO
-// EXCLUSIVE JURISDICTION AND VENUE IN THE COURTS SITTING IN TOKYO,
-// JAPAN. YOU MUST WAIVE ALL DEFENSES OF LACK OF PERSONAL JURISDICTION
-// AND FORUM NON CONVENIENS. PROCESS MAY BE SERVED ON EITHER PARTY IN
-// THE MANNER AUTHORIZED BY APPLICABLE LAW OR COURT RULE.
-// 
-// USE ONLY IN JAPAN. DO NOT USE IT IN OTHER COUNTRIES. IMPORTING THIS
-// SOFTWARE INTO OTHER COUNTRIES IS AT YOUR OWN RISK. SOME COUNTRIES
-// PROHIBIT ENCRYPTED COMMUNICATIONS. USING THIS SOFTWARE IN OTHER
-// COUNTRIES MIGHT BE RESTRICTED.
-// 
-// 
-// SOURCE CODE CONTRIBUTION
-// ------------------------
-// 
-// Your contribution to SoftEther VPN Project is much appreciated.
-// Please send patches to us through GitHub.
-// Read the SoftEther VPN Patch Acceptance Policy in advance:
-// http://www.softether.org/5-download/src/9.patch
-// 
-// 
-// DEAR SECURITY EXPERTS
-// ---------------------
-// 
-// If you find a bug or a security vulnerability please kindly inform us
-// about the problem immediately so that we can fix the security problem
-// to protect a lot of users around the world as soon as possible.
-// 
-// Our e-mail address for security reports is:
-// softether-vpn-security [at] softether.org
-// 
-// Please note that the above e-mail address is not a technical support
-// inquiry address. If you need technical assistance, please visit
-// http://www.softether.org/ and ask your question on the users forum.
-// 
-// Thank you for your cooperation.
 
 
 // DDNS.c
@@ -122,6 +37,9 @@ void DCGetStatus(DDNS_CLIENT *c, DDNS_CLIENT_STATUS *st)
 		Copy(&st->InternetSetting, &c->InternetSetting, sizeof(INTERNET_SETTING));
 	}
 	Unlock(c->Lock);
+
+	UniStrCpy(st->ErrStr_IPv4, sizeof(st->ErrStr_IPv4), _E(st->Err_IPv4));
+	UniStrCpy(st->ErrStr_IPv6, sizeof(st->ErrStr_IPv6), _E(st->Err_IPv6));
 }
 
 // Set the Internet settings
@@ -206,7 +124,7 @@ UINT DCChangeHostName(DDNS_CLIENT *c, char *hostname)
 void DCThread(THREAD *thread, void *param)
 {
 	DDNS_CLIENT *c;
-	INTERRUPT_MANAGER *interrput;
+	INTERRUPT_MANAGER *interrupt;
 	UINT last_ip_hash = 0;
 	void *route_change_poller = NULL;
 	bool last_time_ip_changed = false;
@@ -222,7 +140,7 @@ void DCThread(THREAD *thread, void *param)
 
 	c = (DDNS_CLIENT *)param;
 
-	interrput = NewInterruptManager();
+	interrupt = NewInterruptManager();
 
 	route_change_poller = NewRouteChange();
 	IsRouteChanged(route_change_poller);
@@ -325,7 +243,7 @@ void DCThread(THREAD *thread, void *param)
 
 				c->NextGetMyIpTick_IPv4 = Tick64() + (UINT64)next_interval;
 
-				AddInterrupt(interrput, c->NextGetMyIpTick_IPv4);
+				AddInterrupt(interrupt, c->NextGetMyIpTick_IPv4);
 			}
 
 			// Self IPv6 address acquisition
@@ -360,7 +278,7 @@ void DCThread(THREAD *thread, void *param)
 
 				c->NextGetMyIpTick_IPv6 = Tick64() + (UINT64)next_interval;
 
-				AddInterrupt(interrput, c->NextGetMyIpTick_IPv6);
+				AddInterrupt(interrupt, c->NextGetMyIpTick_IPv6);
 			}
 		}
 
@@ -398,7 +316,7 @@ void DCThread(THREAD *thread, void *param)
 				SiApplyAzureConfig(c->Cedar->Server, &st);
 			}
 
-			AddInterrupt(interrput, c->NextRegisterTick_IPv4);
+			AddInterrupt(interrupt, c->NextRegisterTick_IPv4);
 		}
 
 		if (c->Halt)
@@ -433,15 +351,15 @@ void DCThread(THREAD *thread, void *param)
 				SiApplyAzureConfig(c->Cedar->Server, &st);
 			}
 
-			AddInterrupt(interrput, c->NextRegisterTick_IPv6);
+			AddInterrupt(interrupt, c->NextRegisterTick_IPv6);
 		}
 
-		interval = GetNextIntervalForInterrupt(interrput);
+		interval = GetNextIntervalForInterrupt(interrupt);
 		interval = MIN(interval, 1234);
 
 		if (n == 1)
 		{
-			interval = MIN(interval, 0);
+			interval = 0;
 		}
 
 		if (c->Halt)
@@ -469,21 +387,7 @@ void DCThread(THREAD *thread, void *param)
 	}
 
 	FreeRouteChange(route_change_poller);
-	FreeInterruptManager(interrput);
-}
-
-// Command to update immediately
-void DCUpdateNow(DDNS_CLIENT *c)
-{
-	// Validate arguments
-	if (c == NULL)
-	{
-		return;
-	}
-
-	c->NextRegisterTick_IPv4 = c->NextRegisterTick_IPv6 = 0;
-
-	Set(c->Event);
+	FreeInterruptManager(interrupt);
 }
 
 // Execution of registration
@@ -497,7 +401,7 @@ UINT DCRegister(DDNS_CLIENT *c, bool ipv6, DDNS_REGISTER_PARAM *p, char *replace
 	UCHAR machine_key[SHA1_SIZE];
 	char machine_key_str[MAX_SIZE];
 	char machine_name[MAX_SIZE];
-	BUF *cert_hash;
+	BUF *cert_hash = NULL;
 	UINT err = ERR_INTERNAL_ERROR;
 	UCHAR key_hash[SHA1_SIZE];
 	char key_hash_str[MAX_SIZE];
@@ -505,13 +409,16 @@ UINT DCRegister(DDNS_CLIENT *c, bool ipv6, DDNS_REGISTER_PARAM *p, char *replace
 	char current_azure_ip[MAX_SIZE];
 	INTERNET_SETTING t;
 	UINT build = 0;
-	bool use_https = false;
-	bool use_vgs = false;
+	char add_header_name[64];
+	char add_header_value[64];
 	// Validate arguments
 	if (c == NULL)
 	{
 		return ERR_INTERNAL_ERROR;
 	}
+
+	Zero(add_header_name, sizeof(add_header_name));
+	Zero(add_header_value, sizeof(add_header_value));
 
 	Zero(current_azure_ip, sizeof(current_azure_ip));
 
@@ -597,8 +504,9 @@ UINT DCRegister(DDNS_CLIENT *c, bool ipv6, DDNS_REGISTER_PARAM *p, char *replace
 	PackAddInt(req, "lasterror_ipv4", c->Err_IPv4_GetMyIp);
 	PackAddInt(req, "lasterror_ipv6", c->Err_IPv6_GetMyIp);
 	PackAddBool(req, "use_azure", use_azure);
-	PackAddStr(req, "product_str", CEDAR_PRODUCT_STR);
+	PackAddStr(req, "product_str", "SoftEther OSS");
 	PackAddInt(req, "ddns_protocol_version", DDNS_VERSION);
+	PackAddInt(req, "ddns_oss", 1);
 
 
 	if (use_azure)
@@ -607,7 +515,7 @@ UINT DCRegister(DDNS_CLIENT *c, bool ipv6, DDNS_REGISTER_PARAM *p, char *replace
 		PackAddStr(req, "current_azure_ip", current_azure_ip);
 	}
 
-	HashSha1(key_hash, key_str, StrLen(key_str));
+	Sha1(key_hash, key_str, StrLen(key_str));
 	BinToStr(key_hash_str, sizeof(key_hash_str), key_hash, sizeof(key_hash));
 	StrLower(key_hash_str);
 
@@ -621,21 +529,22 @@ UINT DCRegister(DDNS_CLIENT *c, bool ipv6, DDNS_REGISTER_PARAM *p, char *replace
 
 
 
-	cert_hash = StrToBin(DDNS_CERT_HASH);
-
 	Format(url2, sizeof(url2), "%s?v=%I64u", url, Rand64());
-	Format(url3, sizeof(url3), url2, key_hash_str[0], key_hash_str[1], key_hash_str[2], key_hash_str[3]);
+	Format(url3, sizeof(url3), url2, key_hash_str[2], key_hash_str[3]);
 
-	if (use_https == false)
-	{
-		ReplaceStr(url3, sizeof(url3), url3, "https://", "http://");
-	}
+	ReplaceStr(url3, sizeof(url3), url3, "https://", "http://");
 
 	ReplaceStr(url3, sizeof(url3), url3, ".servers", ".open.servers");
 
+	cert_hash = StrToBin(DDNS_CERT_HASH);
+
 	Debug("WpcCall: %s\n", url3);
-	ret = WpcCallEx(url3, &t, DDNS_CONNECT_TIMEOUT, DDNS_COMM_TIMEOUT, "register", req,
-		NULL, NULL, ((cert_hash != NULL && cert_hash->Size == SHA1_SIZE) ? cert_hash->Buf : NULL), NULL, DDNS_RPC_MAX_RECV_SIZE);
+	ret = WpcCallEx2(url3, &t, DDNS_CONNECT_TIMEOUT, DDNS_COMM_TIMEOUT, "register", req,
+		NULL, NULL, ((cert_hash != NULL && ((cert_hash->Size % SHA1_SIZE) == 0)) ? cert_hash->Buf : NULL),
+		(cert_hash != NULL ? cert_hash->Size / SHA1_SIZE : 0),
+		NULL, DDNS_RPC_MAX_RECV_SIZE,
+		add_header_name, add_header_value,
+		DDNS_SNI_VER_STRING);
 	Debug("WpcCall Ret: %u\n", ret);
 
 	FreeBuf(cert_hash);
@@ -652,6 +561,7 @@ UINT DCRegister(DDNS_CLIENT *c, bool ipv6, DDNS_REGISTER_PARAM *p, char *replace
 		if (err == ERR_NO_ERROR)
 		{
 			char snat_t[MAX_SIZE];
+			char current_region[128];
 
 			// Current host name
 			PackGetStr(ret, "current_hostname", c->CurrentHostName, sizeof(c->CurrentHostName));
@@ -659,6 +569,7 @@ UINT DCRegister(DDNS_CLIENT *c, bool ipv6, DDNS_REGISTER_PARAM *p, char *replace
 			PackGetStr(ret, "current_ipv4", c->CurrentIPv4, sizeof(c->CurrentIPv4));
 			PackGetStr(ret, "current_ipv6", c->CurrentIPv6, sizeof(c->CurrentIPv6));
 			PackGetStr(ret, "dns_suffix", c->DnsSuffix, sizeof(c->DnsSuffix));
+			PackGetStr(ret, "current_region", current_region, sizeof(current_region));
 
 			// SecureNAT connectivity check parameters
 			Zero(snat_t, sizeof(snat_t));
@@ -688,6 +599,12 @@ UINT DCRegister(DDNS_CLIENT *c, bool ipv6, DDNS_REGISTER_PARAM *p, char *replace
 				c->CurrentHostName, c->CurrentFqdn,
 				c->CurrentIPv4, c->CurrentIPv6,
 				c->CurrentAzureIp, c->CurrentAzureTimestamp, c->CurrentAzureSignature, c->AzureCertHash);
+
+			if (IsEmptyStr(current_region) == false)
+			{
+				// Update the current region
+				SiUpdateCurrentRegion(c->Cedar, current_region, false);
+			}
 		}
 	}
 	Unlock(c->Lock);
@@ -777,7 +694,7 @@ UINT DCGetMyIpMain(DDNS_CLIENT *c, bool ipv6, char *dst, UINT dst_size, bool use
 	UINT ret = ERR_INTERNAL_ERROR;
 	URL_DATA data;
 	BUF *recv;
-	BUF *cert_hash;
+	BUF *cert_hash = NULL;
 	// Validate arguments
 	if (dst == NULL || c == NULL)
 	{
@@ -815,6 +732,7 @@ UINT DCGetMyIpMain(DDNS_CLIENT *c, bool ipv6, char *dst, UINT dst_size, bool use
 		ReplaceStr(url2, sizeof(url2), url2, "http://", "https://");
 	}
 
+
 	if (ParseUrl(&data, url2, false, NULL) == false)
 	{
 		return ERR_INTERNAL_ERROR;
@@ -822,8 +740,11 @@ UINT DCGetMyIpMain(DDNS_CLIENT *c, bool ipv6, char *dst, UINT dst_size, bool use
 
 	cert_hash = StrToBin(DDNS_CERT_HASH);
 
-	recv = HttpRequest(&data, (ipv6 ? NULL : &c->InternetSetting), DDNS_CONNECT_TIMEOUT, DDNS_COMM_TIMEOUT, &ret, false, NULL, NULL,
-		NULL, ((cert_hash != NULL && cert_hash->Size == SHA1_SIZE) ? cert_hash->Buf : NULL));
+	StrCpy(data.SniString, sizeof(data.SniString), DDNS_SNI_VER_STRING);
+
+	recv = HttpRequestEx3(&data, (ipv6 ? NULL : &c->InternetSetting), DDNS_CONNECT_TIMEOUT, DDNS_COMM_TIMEOUT, &ret, false, NULL, NULL,
+		NULL, ((cert_hash != NULL && (cert_hash->Size % SHA1_SIZE) == 0) ? cert_hash->Buf : NULL),
+		(cert_hash != NULL ? cert_hash->Size / SHA1_SIZE : 0), NULL, 0, NULL, NULL);
 
 	FreeBuf(cert_hash);
 
@@ -875,6 +796,7 @@ UINT DCGetMyIpMain(DDNS_CLIENT *c, bool ipv6, char *dst, UINT dst_size, bool use
 	return ret;
 }
 
+
 // Creating a DDNS client
 DDNS_CLIENT *NewDDNSClient(CEDAR *cedar, UCHAR *key, INTERNET_SETTING *t)
 {
@@ -903,7 +825,7 @@ DDNS_CLIENT *NewDDNSClient(CEDAR *cedar, UCHAR *key, INTERNET_SETTING *t)
 		Copy(c->Key, key, SHA1_SIZE);
 	}
 
-	HashSha1(key_hash, c->Key, sizeof(c->Key));
+	Sha1(key_hash, c->Key, sizeof(c->Key));
 
 
 	if (t != NULL)
@@ -975,7 +897,7 @@ void DCGenNewKey(UCHAR *key)
 	GetCurrentMachineIpProcessHash(hash);
 	WriteBuf(b, hash, sizeof(hash));
 
-	HashSha1(key, b->Buf, b->Size);
+	Sha1(key, b->Buf, b->Size);
 	Rand(rand, sizeof(rand));
 
 	for (i = 0;i < SHA1_SIZE;i++)
@@ -987,7 +909,3 @@ void DCGenNewKey(UCHAR *key)
 }
 
 
-
-// Developed by SoftEther VPN Project at University of Tsukuba in Japan.
-// Department of Computer Science has dozens of overly-enthusiastic geeks.
-// Join us: http://www.tsukuba.ac.jp/english/admission/

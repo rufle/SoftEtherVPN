@@ -1,90 +1,5 @@
-// SoftEther VPN Source Code
+// SoftEther VPN Source Code - Developer Edition Master Branch
 // Cedar Communication Module
-// 
-// SoftEther VPN Server, Client and Bridge are free software under GPLv2.
-// 
-// Copyright (c) 2012-2014 Daiyuu Nobori.
-// Copyright (c) 2012-2014 SoftEther VPN Project, University of Tsukuba, Japan.
-// Copyright (c) 2012-2014 SoftEther Corporation.
-// 
-// All Rights Reserved.
-// 
-// http://www.softether.org/
-// 
-// Author: Daiyuu Nobori
-// Comments: Tetsuo Sugiyama, Ph.D.
-// 
-// 
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License
-// version 2 as published by the Free Software Foundation.
-// 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU General Public License for more details.
-// 
-// You should have received a copy of the GNU General Public License version 2
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-// IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-// CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-// TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-// SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-// 
-// THE LICENSE AGREEMENT IS ATTACHED ON THE SOURCE-CODE PACKAGE
-// AS "LICENSE.TXT" FILE. READ THE TEXT FILE IN ADVANCE TO USE THE SOFTWARE.
-// 
-// 
-// THIS SOFTWARE IS DEVELOPED IN JAPAN, AND DISTRIBUTED FROM JAPAN,
-// UNDER JAPANESE LAWS. YOU MUST AGREE IN ADVANCE TO USE, COPY, MODIFY,
-// MERGE, PUBLISH, DISTRIBUTE, SUBLICENSE, AND/OR SELL COPIES OF THIS
-// SOFTWARE, THAT ANY JURIDICAL DISPUTES WHICH ARE CONCERNED TO THIS
-// SOFTWARE OR ITS CONTENTS, AGAINST US (SOFTETHER PROJECT, SOFTETHER
-// CORPORATION, DAIYUU NOBORI OR OTHER SUPPLIERS), OR ANY JURIDICAL
-// DISPUTES AGAINST US WHICH ARE CAUSED BY ANY KIND OF USING, COPYING,
-// MODIFYING, MERGING, PUBLISHING, DISTRIBUTING, SUBLICENSING, AND/OR
-// SELLING COPIES OF THIS SOFTWARE SHALL BE REGARDED AS BE CONSTRUED AND
-// CONTROLLED BY JAPANESE LAWS, AND YOU MUST FURTHER CONSENT TO
-// EXCLUSIVE JURISDICTION AND VENUE IN THE COURTS SITTING IN TOKYO,
-// JAPAN. YOU MUST WAIVE ALL DEFENSES OF LACK OF PERSONAL JURISDICTION
-// AND FORUM NON CONVENIENS. PROCESS MAY BE SERVED ON EITHER PARTY IN
-// THE MANNER AUTHORIZED BY APPLICABLE LAW OR COURT RULE.
-// 
-// USE ONLY IN JAPAN. DO NOT USE IT IN OTHER COUNTRIES. IMPORTING THIS
-// SOFTWARE INTO OTHER COUNTRIES IS AT YOUR OWN RISK. SOME COUNTRIES
-// PROHIBIT ENCRYPTED COMMUNICATIONS. USING THIS SOFTWARE IN OTHER
-// COUNTRIES MIGHT BE RESTRICTED.
-// 
-// 
-// SOURCE CODE CONTRIBUTION
-// ------------------------
-// 
-// Your contribution to SoftEther VPN Project is much appreciated.
-// Please send patches to us through GitHub.
-// Read the SoftEther VPN Patch Acceptance Policy in advance:
-// http://www.softether.org/5-download/src/9.patch
-// 
-// 
-// DEAR SECURITY EXPERTS
-// ---------------------
-// 
-// If you find a bug or a security vulnerability please kindly inform us
-// about the problem immediately so that we can fix the security problem
-// to protect a lot of users around the world as soon as possible.
-// 
-// Our e-mail address for security reports is:
-// softether-vpn-security [at] softether.org
-// 
-// Please note that the above e-mail address is not a technical support
-// inquiry address. If you need technical assistance, please visit
-// http://www.softether.org/ and ask your question on the users forum.
-// 
-// Thank you for your cooperation.
 
 
 // Cedar.h
@@ -114,10 +29,18 @@
 
 
 // Version number
-#define	CEDAR_VER					405
+#ifndef	CEDAR_VERSION_MAJOR
+#define	CEDAR_VERSION_MAJOR		0
+#endif	// CEDAR_VERSION_MAJOR
 
-// Build Number
-#define	CEDAR_BUILD					9423
+#ifndef	CEDAR_VERSION_MINOR
+#define	CEDAR_VERSION_MINOR		0
+#endif	// CEDAR_VER_MINOR
+
+// Build number
+#ifndef	CEDAR_VERSION_BUILD
+#define	CEDAR_VERSION_BUILD		0
+#endif	// CEDAR_VERSION_BUILD
 
 // Beta number
 //#define	BETA_NUMBER					3
@@ -127,21 +50,38 @@
 
 // Specify the name of the person in charge building
 #ifndef	BUILDER_NAME
-#define	BUILDER_NAME		"yagi"
+#define	BUILDER_NAME			"Unknown"
 #endif	// BUILDER_NAME
 
 // Specify the location to build
 #ifndef	BUILD_PLACE
-#define	BUILD_PLACE			"pc25"
+#define	BUILD_PLACE				"Unknown"
 #endif	// BUILD_PLACE
 
 // Specifies the build date
-#define	BUILD_DATE_Y		2014
-#define	BUILD_DATE_M		2
-#define	BUILD_DATE_D		18
-#define	BUILD_DATE_HO		19
-#define	BUILD_DATE_MI		9
-#define	BUILD_DATE_SE		44
+#ifndef	BUILD_DATE_Y
+#define	BUILD_DATE_Y			1970
+#endif	// BUILD_DATE_Y
+
+#ifndef	BUILD_DATE_M
+#define	BUILD_DATE_M			1
+#endif	// BUILD_DATE_M
+
+#ifndef	BUILD_DATE_D
+#define	BUILD_DATE_D			1
+#endif	// BUILD_DATE_D
+
+#ifndef	BUILD_DATE_HO
+#define	BUILD_DATE_HO			0
+#endif	// BUILD_DATE_HO
+
+#ifndef	BUILD_DATE_MI
+#define	BUILD_DATE_MI			0
+#endif	// BUILD_DATE_MI
+
+#ifndef	BUILD_DATE_SE
+#define	BUILD_DATE_SE			0
+#endif	// BUILD_DATE_SE
 
 // Tolerable time difference
 #define	ALLOW_TIMESTAMP_DIFF		(UINT64)(3 * 24 * 60 * 60 * 1000)
@@ -163,6 +103,9 @@
 // Hidden password string of 8 characters
 #define	HIDDEN_PASSWORD				"********"
 
+// Default separator character for the hub name in the username
+#define	DEFAULT_USERNAME_HUB_SEPARATOR	'@'
+
 
 //////////////////////////////////////////////////////////////////////
 // 
@@ -173,8 +116,6 @@
 #define	MAX_ACCOUNT_NAME_LEN		255		// Maximum account name length
 #define	MAX_USERNAME_LEN			255		// User name maximum length
 #define	MAX_PASSWORD_LEN			255		// Password name maximum length
-#define	MAX_PROXY_USERNAME_LEN		255		// Proxy user name maximum length
-#define	MAX_PROXY_PASSWORD_LEN		255		// Proxy Password maximum length
 #define	MAX_SERVER_STR_LEN			255		// Maximum length of server string
 #define	MAX_CLIENT_STR_LEN			255		// Maximum length of client string
 #define	MAX_HUBNAME_LEN				255		// Maximum length of HUB name
@@ -203,39 +144,56 @@
 #define	MAX_ACCESSLISTS				(4096 * 8)	// Maximum number of access list entries
 #define	MAX_USERS					10000	// The maximum number of users
 #define	MAX_GROUPS					10000	// Maximum number of groups
-#define	MAX_MAC_TABLES				65536	// Maximum number of MAC address table entries
-#define	MAX_IP_TABLES				65536	// Maximum number of IP address table entries
+#define	MAX_MAC_TABLES				VPN_GP(GP_MAX_MAC_TABLES, 65536)	// Maximum number of MAC address table entries
+#define	MAX_IP_TABLES				VPN_GP(GP_MAX_IP_TABLES, 65536)	// Maximum number of IP address table entries
 #define	MAX_HUB_CERTS				4096	// Maximum number of Root CA that can be registered
 #define	MAX_HUB_CRLS				4096	// Maximum number of CRL that can be registered
 #define	MAX_HUB_ACS					4096	// Maximum number of AC that can be registered
-#define	MAX_HUB_LINKS				128		// Maximum number of Cascade that can be registered
+#define	MAX_HUB_LINKS				VPN_GP(GP_MAX_HUB_LINKS, 1024)	// Maximum number of Cascade that can be registered
 #define	MAX_HUB_ADMIN_OPTIONS		4096	// Maximum number of Virtual HUB management options that can be registered
 
-#define	MAX_PACKET_SIZE				1560	// Maximum packet size
+#ifndef	USE_STRATEGY_LOW_MEMORY
+#define	MEM_FIFO_REALLOC_MEM_SIZE	VPN_GP(GP_MEM_FIFO_REALLOC_MEM_SIZE, (65536 * 10))
+#define	QUEUE_BUDGET				VPN_GP(GP_QUEUE_BUDGET, 2048)
+#define	FIFO_BUDGET					VPN_GP(GP_FIFO_BUDGET, 1600 * 1600 * 4)
+#else	// USE_STRATEGY_LOW_MEMORY
+#define	MEM_FIFO_REALLOC_MEM_SIZE	VPN_GP(GP_MEM_FIFO_REALLOC_MEM_SIZE, (65536))
+#define	QUEUE_BUDGET				VPN_GP(GP_QUEUE_BUDGET, 1024)
+#define	FIFO_BUDGET					VPN_GP(GP_FIFO_BUDGET, 1000000)
+#endif	// USE_STRATEGY_LOW_MEMORY
+
+#define	MAX_PACKET_SIZE				1600	// Maximum packet size
 #define	UDP_BUF_SIZE				(32 * 1024) // Aim of the UDP packet size
 
-#define	MAX_SEND_SOCKET_QUEUE_SIZE	(1600 * 1600 * 1)	// Maximum transmit queue size
-#define	MIN_SEND_SOCKET_QUEUE_SIZE	(1600 * 200 * 1)
-#define	MAX_SEND_SOCKET_QUEUE_NUM	128		// Maximum transmission queue items
+#ifndef	USE_STRATEGY_LOW_MEMORY
+#define	MAX_SEND_SOCKET_QUEUE_SIZE	VPN_GP(GP_MAX_SEND_SOCKET_QUEUE_SIZE, (1600 * 1600 * 1))	// Maximum transmit queue size
+#define	MIN_SEND_SOCKET_QUEUE_SIZE	VPN_GP(GP_MIN_SEND_SOCKET_QUEUE_SIZE, (1600 * 200 * 1))	// Minimum transmit queue size
+#define	MAX_STORED_QUEUE_NUM		VPN_GP(GP_MAX_STORED_QUEUE_NUM, 1024)		// The number of queues that can be stored in each session
+#define	MAX_BUFFERING_PACKET_SIZE	VPN_GP(GP_MAX_BUFFERING_PACKET_SIZE, (1600 * 1600))	// Maximum packet size can be buffered
+#else	// USE_STRATEGY_LOW_MEMORY
+#define	MAX_SEND_SOCKET_QUEUE_SIZE	VPN_GP(GP_MAX_SEND_SOCKET_QUEUE_SIZE, (1600 * 200 * 1))	// Maximum transmit queue size
+#define	MIN_SEND_SOCKET_QUEUE_SIZE	VPN_GP(GP_MIN_SEND_SOCKET_QUEUE_SIZE, (1600 * 50 * 1))	// Minimum transmit queue size
+#define	MAX_STORED_QUEUE_NUM		VPN_GP(GP_MAX_STORED_QUEUE_NUM, 384)		// The number of queues that can be stored in each session
+#define	MAX_BUFFERING_PACKET_SIZE	VPN_GP(GP_MAX_BUFFERING_PACKET_SIZE, (1600 * 300 * 1))	// Maximum packet size can be buffered
+#endif	// USE_STRATEGY_LOW_MEMORY
+
+#define	MAX_SEND_SOCKET_QUEUE_NUM	VPN_GP(GP_MAX_SEND_SOCKET_QUEUE_NUM, 128)		// Maximum number of transmission queue items per processing
 #define	MAX_TCP_CONNECTION			32		// The maximum number of TCP connections
 #define	NUM_TCP_CONNECTION_FOR_UDP_RECOVERY	2	// Maximum number of connections when using UDP recovery
-#define	SELECT_TIME					256
-#define	SELECT_TIME_FOR_NAT			30
+#define	SELECT_TIME					VPN_GP(GP_SELECT_TIME, 256)
+#define	SELECT_TIME_FOR_NAT			VPN_GP(GP_SELECT_TIME_FOR_NAT, 30)
 #define	SELECT_TIME_FOR_DELAYED_PKT	1		// If there is a delayed packet
-#define	MAX_STORED_QUEUE_NUM		1024		// The number of queues that can be stored in each session
-#define	MAX_BUFFERING_PACKET_SIZE	(1600 * 1600)	// Maximum packet size can be buffered
 
 #define	TIMEOUT_MIN					(5 * 1000)	// Minimum timeout in seconds
 #define	TIMEOUT_MAX					(60 * 1000)	// Maximum timeout in seconds
 #define	TIMEOUT_DEFAULT				(30 * 1000) // Default number of seconds to timeout
 #define	CONNECTING_TIMEOUT			(15 * 1000)	// Timeout in seconds of being connected
-#define	CONNECTING_TIMEOUT_PROXY	(4 * 1000)	// Timeout in seconds of being connected (Proxy)
 #define	CONNECTING_POOLING_SPAN		(3 * 1000) // Polling interval of connected
 #define	MIN_RETRY_INTERVAL			(5 * 1000)		// Minimum retry interval
 #define	MAX_RETRY_INTERVAL			(300 * 1000)	// Maximum retry interval
 #define	RETRY_INTERVAL_SPECIAL		(60 * 1000)		// Reconnection interval of a special case
 
-#define	MAX_ADDITONAL_CONNECTION_FAILED_COUNTER	16	// Allowable number that can be serially failed to additional connection
+#define	MAX_ADDITIONAL_CONNECTION_FAILED_COUNTER	16	// Allowable number that can be serially failed to additional connection
 #define	ADDITIONAL_CONNECTION_COUNTER_RESET_INTERVAL	(30 * 60 * 1000)	// Reset period of additional connection failure counter
 
 #define	MAC_MIN_LIMIT_COUNT			3		// Minimum number of MAC addresses
@@ -245,16 +203,16 @@
 
 #define	MAC_TABLE_EXCLUSIVE_TIME	(13 * 1000)			// Period that can occupy the MAC address
 #define	IP_TABLE_EXCLUSIVE_TIME		(13 * 1000)			// Period that can occupy the IP address
-#define	MAC_TABLE_EXPIRE_TIME		(600 * 1000)			// MAC address table expiration date
-#define	IP_TABLE_EXPIRE_TIME		(60 * 1000)			// IP address table expiration date
-#define	IP_TABLE_EXPIRE_TIME_DHCP	(5 * 60 * 1000)		// IP address table expiration date (In the case of DHCP)
-#define	HUB_ARP_SEND_INTERVAL		(5 * 1000)			// ARP packet transmission interval (alive check)
+#define	MAC_TABLE_EXPIRE_TIME		VPN_GP(GP_MAC_TABLE_EXPIRE_TIME, (600 * 1000))			// MAC address table expiration time
+#define	IP_TABLE_EXPIRE_TIME		VPN_GP(GP_IP_TABLE_EXPIRE_TIME, (60 * 1000))			// IP address table expiration time
+#define	IP_TABLE_EXPIRE_TIME_DHCP	VPN_GP(GP_IP_TABLE_EXPIRE_TIME_DHCP, (5 * 60 * 1000))		// IP address table expiration time (In the case of DHCP)
+#define	HUB_ARP_SEND_INTERVAL		VPN_GP(GP_HUB_ARP_SEND_INTERVAL, (5 * 1000))			// ARP packet transmission interval (alive check)
 
 #define	LIMITER_SAMPLING_SPAN		1000	// Sampling interval of the traffic limiting device
 
-#define	STORM_CHECK_SPAN			500		// Broadcast storm check interval
-#define	STORM_DISCARD_VALUE_START	3		// Broadcast packet discard value start value
-#define	STORM_DISCARD_VALUE_END		1024	// Broadcast packet discard value end value
+#define	STORM_CHECK_SPAN			VPN_GP(GP_STORM_CHECK_SPAN, 500)		// Broadcast storm check interval
+#define	STORM_DISCARD_VALUE_START	VPN_GP(GP_STORM_DISCARD_VALUE_START, 3)		// Broadcast packet discard value start value
+#define	STORM_DISCARD_VALUE_END		VPN_GP(GP_STORM_DISCARD_VALUE_END, 1024)	// Broadcast packet discard value end value
 
 #define	KEEP_INTERVAL_MIN			5		// Packet transmission interval minimum value
 #define	KEEP_INTERVAL_DEFAULT		50		// Packet transmission interval default value
@@ -269,6 +227,7 @@
 #define	FARM_BASE_POINT				100000		// Reference value of the cluster score
 #define	FARM_DEFAULT_WEIGHT			100			// Standard performance ratio
 
+#define DH_PARAM_BITS_DEFAULT		2048		// Bits of Diffie-Hellman Parameters
 
 
 #define	SE_UDP_SIGN			"SE2P"		// Not used (only old UDP mode)
@@ -326,7 +285,8 @@
 // Type of proxy
 #define	PROXY_DIRECT			0	// Direct TCP connection
 #define	PROXY_HTTP				1	// Connection via HTTP proxy server
-#define	PROXY_SOCKS				2	// Connection via SOCKS proxy server
+#define	PROXY_SOCKS				2	// Connection via SOCKS4 proxy server
+#define	PROXY_SOCKS5			3	// Connection via SOCKS5 proxy server
 
 // Direction of data flow
 #define	TCP_BOTH				0	// Bi-directional
@@ -342,8 +302,7 @@
 #define	CONNECTION_TYPE_ADMIN_RPC		5	// RPC for Management
 #define	CONNECTION_TYPE_ENUM_HUB		6	// HUB enumeration
 #define	CONNECTION_TYPE_PASSWORD		7	// Password change
-#define	CONNECTION_TYPE_SSTP			8	// SSTP
-#define	CONNECTION_TYPE_OPENVPN			9	// OpenVPN
+#define	CONNECTION_TYPE_OTHER			0xffffffff	// E.g. Third-party protocol
 
 // Protocol
 #define	CONNECTION_TCP					0	// TCP protocol
@@ -408,6 +367,7 @@
 #define	AUTHTYPE_ROOTCERT				3			// Root certificate which is issued by trusted Certificate Authority
 #define	AUTHTYPE_RADIUS					4			// Radius authentication
 #define	AUTHTYPE_NT						5			// Windows NT authentication
+#define	AUTHTYPE_OPENVPN_CERT    		98			// TLS client certificate authentication
 #define	AUTHTYPE_TICKET					99			// Ticket authentication
 
 // Constant of the client side
@@ -471,19 +431,29 @@
 #define	LOG_ENGINE_BUFFER_CACHE_SIZE_MAX	(10 * 1024 * 1024)	// Write cache size
 
 // Constant such as a file name
-#define	SERVER_LOG_DIR_NAME			"@server_log"
+//
+// These placeholders will be replaced in InnerFilePathW().
+//
+// @ - placeholder for LogDir
+// $ - placeholder for DbDir (config directory)
+//
+#define	SERVER_LOG_DIR				"server_log"
+#define	SERVER_LOG_DIR_NAME			"@"SERVER_LOG_DIR
 #define	BRIDGE_LOG_DIR_NAME			SERVER_LOG_DIR_NAME
 #define	SERVER_LOG_PERFIX			"vpn"
 
-#define	HUB_SECURITY_LOG_DIR_NAME	"@security_log"
-#define	HUB_SECURITY_LOG_FILE_NAME	"@security_log/%s"
+#define	HUB_SECURITY_LOG_DIR		"security_log"
+#define	HUB_SECURITY_LOG_DIR_NAME	"@"HUB_SECURITY_LOG_DIR
+#define	HUB_SECURITY_LOG_FILE_NAME	HUB_SECURITY_LOG_DIR_NAME"/%s"
 #define	HUB_SECURITY_LOG_PREFIX		"sec"
-#define	HUB_PACKET_LOG_DIR_NAME		"@packet_log"
-#define	HUB_PACKET_LOG_FILE_NAME	"@packet_log/%s"
+#define	HUB_PACKET_LOG_DIR		"packet_log"
+#define	HUB_PACKET_LOG_DIR_NAME		"@"HUB_PACKET_LOG_DIR
+#define	HUB_PACKET_LOG_FILE_NAME	HUB_PACKET_LOG_DIR_NAME"/%s"
 #define	HUB_PACKET_LOG_PREFIX		"pkt"
 
-#define	NAT_LOG_DIR_NAME			"@secure_nat_log"
-#define	NAT_LOG_FILE_NAME			"@secure_nat_log/%s"
+#define	NAT_LOG_DIR				"secure_nat_log"
+#define	NAT_LOG_DIR_NAME			"@"NAT_LOG_DIR
+#define	NAT_LOG_FILE_NAME			NAT_LOG_DIR_NAME"/%s"
 #define	NAT_LOG_PREFIX				"snat"
 
 #define	CLIENT_LOG_DIR_NAME			"@client_log"
@@ -505,7 +475,7 @@
 #define	PACKET_LOG_ALL				2		// Store also data
 
 // Timing of log switching
-#define	LOG_SWITCH_NO				0		// Without switching
+#define	LOG_SWITCH_NO				0		// No switching
 #define	LOG_SWITCH_SECOND			1		// Secondly basis
 #define	LOG_SWITCH_MINUTE			2		// Minutely basis
 #define	LOG_SWITCH_HOUR				3		// Hourly basis
@@ -518,7 +488,7 @@
 #define	DISK_FREE_SPACE_DEFAULT_WINDOWS	((UINT64)(8ULL * 1024ULL * 1024ULL * 1024ULL))	// 8GBytes
 
 // Interval to check the free space
-#define	DISK_FREE_CHECK_INTERVAL	(5 * 60 * 1000)
+#define	DISK_FREE_CHECK_INTERVAL_DEFAULT	(5 * 60 * 1000)
 
 // Simple log
 #define TINY_LOG_DIRNAME			"@tiny_log"
@@ -552,7 +522,7 @@
 // Expiration date of random size cache
 #define	RAND_SIZE_CACHE_EXPIRE		(24 * 60 * 60 * 1000)
 // Management allowed IP address list file name
-#define	ADMINIP_TXT					"@adminip.txt"
+#define	ADMINIP_TXT					"$adminip.txt"
 
 #define NON_SSL_MIN_COUNT			60
 #define NON_SSL_ENTRY_EXPIRES		(10 * 60 * 1000)
@@ -603,9 +573,10 @@
 //////////////////////////////////////////////////////////////////////
 
 #define	EL_ADMIN_PORT			22888
-#define	EL_CONFIG_FILENAME		"@etherlogger.config"
-#define	EL_PACKET_LOG_DIR_NAME	"@etherlogger_log"
-#define	EL_PACKET_LOG_FILE_NAME	"@etherlogger_log/%s"
+#define	EL_CONFIG_FILENAME		"$etherlogger.config"
+#define	EL_PACKET_LOG_DIR	"etherlogger_log"
+#define	EL_PACKET_LOG_DIR_NAME	"@"EL_PACKET_LOG_DIR
+#define	EL_PACKET_LOG_FILE_NAME	EL_PACKET_LOG_DIR_NAME"/%s"
 #define	EL_PACKET_LOG_PREFIX	"pkt"
 #define	EL_LICENSE_CHECK_SPAN	(10 * 1000)
 
@@ -631,7 +602,7 @@
 
 #define	ARP_ENTRY_EXPIRES			(30 * 1000)		// ARP table expiration date
 #define	ARP_ENTRY_POLLING_TIME		(1 * 1000)		// ARP table cleaning timer
-#define	ARP_REQUEST_TIMEOUT			(200)			// ARP request time-out period
+#define	ARP_REQUEST_TIMEOUT			(1000)			// ARP request time-out period
 #define	ARP_REQUEST_GIVEUP			(5 * 1000)		// Time to give up sending the ARP request
 #define	IP_WAIT_FOR_ARP_TIMEOUT		(5 * 1000)		// Total time that an IP packet waiting for ARP table
 #define	IP_COMBINE_TIMEOUT			(10 * 1000)		// Time-out of IP packet combining
@@ -703,20 +674,14 @@
 // 
 //////////////////////////////////////////////////////////////////////
 
+#ifndef	UNIX_BSD
 #define	TAP_FILENAME_1				"/dev/net/tun"
 #define	TAP_FILENAME_2				"/dev/tun"
-#ifdef	UNIX_MACOS
-#ifdef	NO_VLAN
-#define	TAP_MACOS_FILENAME			"/dev/tap0"
-#else	// NO_VLAN
-#define	TAP_MACOS_FILENAME			"tap"
-#endif	// NO_VLAN
-#define	TAP_MACOS_DIR				"/dev/"
-#define	TAP_MACOS_NUMBER			(16)
-#endif	// UNIX_MACOS
-
-
-
+#else	// UNIX_BSD
+#define	TAP_NAME					"tap"
+#define	TAP_DIR						"/dev/"
+#define	TAP_MAX						(512)
+#endif	// UNIX_BSD
 
 
 #define	LICENSE_EDITION_VPN3_NO_LICENSE					0		// Without license
@@ -902,6 +867,7 @@
 #define	ERR_VPNGATE_CLIENT				145 // Operation on VPN Gate Client is not available
 #define	ERR_VPNGATE_INCLIENT_CANT_STOP	146	// Can not be stopped if operating within VPN Client mode
 #define	ERR_NOT_SUPPORTED_FUNCTION_ON_OPENSOURCE	147	// It is a feature that is not supported in the open source version
+#define	ERR_SUSPENDING					148	// System is suspending
 
 
 ////////////////////////////
@@ -962,6 +928,7 @@ typedef struct CEDAR
 	COUNTER *ConnectionIncrement;	// Connection increment counter
 	X *ServerX;						// Server certificate
 	K *ServerK;						// Private key of the server certificate
+	char UsernameHubSeparator;		// Character which separates the username from the hub name
 	char *CipherList;				// List of encryption algorithms
 	UINT Version;					// Version information
 	UINT Build;						// Build Number
@@ -1003,6 +970,17 @@ typedef struct CEDAR
 	char CurrentDDnsFqdn[MAX_SIZE];	// FQDN of the current DDNS
 	char OpenVPNPublicPorts[MAX_SIZE];	// OpenVPN public UDP port list
 	LOCK *OpenVPNPublicPortsLock;	// Lock of OpenVPN public UDP port list
+	LOCK *CurrentRegionLock;		// Current region lock
+	char CurrentRegion[128];		// Current region
+	LOCK *CurrentTcpQueueSizeLock;	// Current TCP send queue size lock
+	UINT CurrentTcpQueueSize;		// Current TCP send queue size
+	COUNTER *CurrentActiveLinks;	// Current active cascade connections
+	LOCK *QueueBudgetLock;			// Queue budget lock
+	UINT QueueBudget;				// Queue budget
+	LOCK *FifoBudgetLock;			// Fifo budget lock
+	UINT FifoBudget;				// Fifo budget
+	SSL_ACCEPT_SETTINGS SslAcceptSettings;	// SSL Accept Settings
+	UINT DhParamBits;  // Bits of Diffie-Hellman parameters
 } CEDAR;
 
 // Type of CEDAR
@@ -1035,7 +1013,7 @@ typedef struct CEDAR
 #include <Cedar/Sam.h>
 // Radius authentication module
 #include <Cedar/Radius.h>
-// Protocol
+// Native protocol
 #include <Cedar/Protocol.h>
 // Inter-HUB link
 #include <Cedar/Link.h>
@@ -1053,19 +1031,19 @@ typedef struct CEDAR
 #include <Cedar/Command.h>
 // RPC over HTTP
 #include <Cedar/Wpc.h>
-// IPsec
-#include <Cedar/IPsec.h>
-#include <Cedar/IPsec_L2TP.h>
-#include <Cedar/IPsec_PPP.h>
-#include <Cedar/IPsec_IPC.h>
-#include <Cedar/IPsec_IkePacket.h>
-#include <Cedar/IPsec_IKE.h>
-#include <Cedar/IPsec_Win7.h>
-#include <Cedar/IPsec_EtherIP.h>
-// SSTP
-#include <Cedar/Interop_SSTP.h>
-// OpenVPN
-#include <Cedar/Interop_OpenVPN.h>
+// Layer-2/Layer-3 converter
+#include <Cedar/IPC.h>
+// Third party protocols
+#include <Cedar/Proto.h>
+#include <Cedar/Proto_IPsec.h>
+#include <Cedar/Proto_EtherIP.h>
+#include <Cedar/Proto_IkePacket.h>
+#include <Cedar/Proto_IKE.h>
+#include <Cedar/Proto_L2TP.h>
+#include <Cedar/Proto_OpenVPN.h>
+#include <Cedar/Proto_PPP.h>
+#include <Cedar/Proto_SSTP.h>
+#include <Cedar/Proto_Win7.h>
 // UDP Acceleration
 #include <Cedar/UdpAccel.h>
 // DDNS Client
@@ -1107,9 +1085,6 @@ typedef struct CEDAR
 
 // Web UI
 #include <Cedar/WebUI.h>
-
-// VPN Gate Plugin DLL
-#include <VGate/VGateCommon.h>
 
 // VPN Gate Main Implementation
 #include <Cedar/VG.h>
@@ -1160,7 +1135,6 @@ void DelHubEx(CEDAR *c, HUB *h, bool no_lock);
 void StopAllHub(CEDAR *c);
 void StopAllConnection(CEDAR *c);
 void AddConnection(CEDAR *cedar, CONNECTION *c);
-UINT GetUnestablishedConnections(CEDAR *cedar);
 void DelConnection(CEDAR *cedar, CONNECTION *c);
 void SetCedarCipherList(CEDAR *cedar, char *name);
 void InitCedar();
@@ -1174,14 +1148,10 @@ void InitNetSvcList(CEDAR *cedar);
 void FreeNetSvcList(CEDAR *cedar);
 int CompareNetSvc(void *p1, void *p2);
 char *GetSvcName(CEDAR *cedar, bool udp, UINT port);
-void InitHiddenPassword(char *str, UINT size);
-bool IsHiddenPasswordChanged(char *str);
 UINT64 GetTrafficPacketSize(TRAFFIC *t);
 UINT64 GetTrafficPacketNum(TRAFFIC *t);
-void EnableDebugLog(CEDAR *c);
 void StartCedarLog();
 void StopCedarLog();
-void CedarLog(char *str);
 int CompareNoSslList(void *p1, void *p2);
 void InitNoSslList(CEDAR *c);
 void FreeNoSslList(CEDAR *c);
@@ -1189,23 +1159,27 @@ bool AddNoSsl(CEDAR *c, IP *ip);
 void DecrementNoSsl(CEDAR *c, IP *ip, UINT num_dec);
 void DeleteOldNoSsl(CEDAR *c);
 NON_SSL *SearchNoSslList(CEDAR *c, IP *ip);
-bool IsInNoSsl(CEDAR *c, IP *ip);
 void FreeTinyLog(TINY_LOG *t);
 void WriteTinyLog(TINY_LOG *t, char *str);
 TINY_LOG *NewTinyLog();
 void GetWinVer(RPC_WINVER *v);
 bool IsSupportedWinVer(RPC_WINVER *v);
-bool IsLaterBuild(CEDAR *c, UINT64 t);
 SOCK *GetInProcListeningSock(CEDAR *c);
 SOCK *GetReverseListeningSock(CEDAR *c);
 void GetCedarVersion(char *tmp, UINT size);
+UINT GetCedarVersionNumber();
 UINT64 GetCurrentBuildDate();
+void CedarAddCurrentTcpQueueSize(CEDAR *c, int diff);
+UINT CedarGetCurrentTcpQueueSize(CEDAR *c);
+void CedarAddQueueBudget(CEDAR *c, int diff);
+void CedarAddFifoBudget(CEDAR *c, int diff);
+UINT CedarGetQueueBudgetConsuming(CEDAR *c);
+UINT CedarGetFifoBudgetConsuming(CEDAR *c);
+UINT CedarGetQueueBudgetBalance(CEDAR *c);
+UINT CedarGetFifoBudgetBalance(CEDAR *c);
+bool CedarIsThereAnyEapEnabledRadiusConfig(CEDAR *c);
 
 
 
 #endif	// CEDAR_H
 
-
-// Developed by SoftEther VPN Project at University of Tsukuba in Japan.
-// Department of Computer Science has dozens of overly-enthusiastic geeks.
-// Join us: http://www.tsukuba.ac.jp/english/admission/

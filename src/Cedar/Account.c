@@ -1,90 +1,5 @@
-// SoftEther VPN Source Code
+// SoftEther VPN Source Code - Developer Edition Master Branch
 // Cedar Communication Module
-// 
-// SoftEther VPN Server, Client and Bridge are free software under GPLv2.
-// 
-// Copyright (c) 2012-2014 Daiyuu Nobori.
-// Copyright (c) 2012-2014 SoftEther VPN Project, University of Tsukuba, Japan.
-// Copyright (c) 2012-2014 SoftEther Corporation.
-// 
-// All Rights Reserved.
-// 
-// http://www.softether.org/
-// 
-// Author: Daiyuu Nobori
-// Comments: Tetsuo Sugiyama, Ph.D.
-// 
-// 
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License
-// version 2 as published by the Free Software Foundation.
-// 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU General Public License for more details.
-// 
-// You should have received a copy of the GNU General Public License version 2
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-// IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-// CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-// TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-// SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-// 
-// THE LICENSE AGREEMENT IS ATTACHED ON THE SOURCE-CODE PACKAGE
-// AS "LICENSE.TXT" FILE. READ THE TEXT FILE IN ADVANCE TO USE THE SOFTWARE.
-// 
-// 
-// THIS SOFTWARE IS DEVELOPED IN JAPAN, AND DISTRIBUTED FROM JAPAN,
-// UNDER JAPANESE LAWS. YOU MUST AGREE IN ADVANCE TO USE, COPY, MODIFY,
-// MERGE, PUBLISH, DISTRIBUTE, SUBLICENSE, AND/OR SELL COPIES OF THIS
-// SOFTWARE, THAT ANY JURIDICAL DISPUTES WHICH ARE CONCERNED TO THIS
-// SOFTWARE OR ITS CONTENTS, AGAINST US (SOFTETHER PROJECT, SOFTETHER
-// CORPORATION, DAIYUU NOBORI OR OTHER SUPPLIERS), OR ANY JURIDICAL
-// DISPUTES AGAINST US WHICH ARE CAUSED BY ANY KIND OF USING, COPYING,
-// MODIFYING, MERGING, PUBLISHING, DISTRIBUTING, SUBLICENSING, AND/OR
-// SELLING COPIES OF THIS SOFTWARE SHALL BE REGARDED AS BE CONSTRUED AND
-// CONTROLLED BY JAPANESE LAWS, AND YOU MUST FURTHER CONSENT TO
-// EXCLUSIVE JURISDICTION AND VENUE IN THE COURTS SITTING IN TOKYO,
-// JAPAN. YOU MUST WAIVE ALL DEFENSES OF LACK OF PERSONAL JURISDICTION
-// AND FORUM NON CONVENIENS. PROCESS MAY BE SERVED ON EITHER PARTY IN
-// THE MANNER AUTHORIZED BY APPLICABLE LAW OR COURT RULE.
-// 
-// USE ONLY IN JAPAN. DO NOT USE IT IN OTHER COUNTRIES. IMPORTING THIS
-// SOFTWARE INTO OTHER COUNTRIES IS AT YOUR OWN RISK. SOME COUNTRIES
-// PROHIBIT ENCRYPTED COMMUNICATIONS. USING THIS SOFTWARE IN OTHER
-// COUNTRIES MIGHT BE RESTRICTED.
-// 
-// 
-// SOURCE CODE CONTRIBUTION
-// ------------------------
-// 
-// Your contribution to SoftEther VPN Project is much appreciated.
-// Please send patches to us through GitHub.
-// Read the SoftEther VPN Patch Acceptance Policy in advance:
-// http://www.softether.org/5-download/src/9.patch
-// 
-// 
-// DEAR SECURITY EXPERTS
-// ---------------------
-// 
-// If you find a bug or a security vulnerability please kindly inform us
-// about the problem immediately so that we can fix the security problem
-// to protect a lot of users around the world as soon as possible.
-// 
-// Our e-mail address for security reports is:
-// softether-vpn-security [at] softether.org
-// 
-// Please note that the above e-mail address is not a technical support
-// inquiry address. If you need technical assistance, please visit
-// http://www.softether.org/ and ask your question on the users forum.
-// 
-// Thank you for your cooperation.
 
 
 // Account.c
@@ -137,18 +52,6 @@ POLICY_ITEM policy_item[] =
 	{36,	false,	false,	0,	0,	0,		NULL},			// NoIPv6DefaultRouterInRAWhenIPv6
 	{37,	true,	true,	1,	4095,	0,	"POL_INT_VLAN"},	// VLanId
 };
-
-// Normalize policy name
-char *NormalizePolicyName(char *name)
-{
-	// Validate arguments
-	if (name == NULL)
-	{
-		return NULL;
-	}
-
-	return PolicyIdToStr(PolicyStrToId(name));
-}
 
 // Format policy value
 void FormatPolicyValue(wchar_t *str, UINT size, UINT id, UINT value)
@@ -236,7 +139,7 @@ POLICY_ITEM *GetPolicyItem(UINT id)
 // Does cascade connection support the specified policy?
 bool PolicyIsSupportedForCascade(UINT i)
 {
-	if (i == 0 || i == 4 || i == 5 || i == 9 || i == 12 || i == 13 ||
+	if (i == 0 || i == 4 || i == 5 || i == 12 || i == 13 ||
 		i == 14 || i == 19 || i == 20 || i == 21 || i == 26 || i == 30 || i == 31 || i == 36)
 	{
 		// These items are not supported by cascade connection.
@@ -327,6 +230,7 @@ UINT PolicyNum()
 // Check the name is valid for account name
 bool IsUserName(char *name)
 {
+	UINT i, len;
 	char tmp[MAX_SIZE];
 	// Validate arguments
 	if (name == NULL)
@@ -339,7 +243,8 @@ bool IsUserName(char *name)
 
 	Trim(name);
 
-	if (StrLen(name) == 0)
+	len = StrLen(name);
+	if (len == 0)
 	{
 		return false;
 	}
@@ -349,9 +254,12 @@ bool IsUserName(char *name)
 		return true;
 	}
 
-	if (IsSafeStr(name) == false)
+	for (i = 0; i < len; i++)
 	{
-		return false;
+		if (IsSafeChar(name[i]) == false && name[i] != '@')
+		{
+			return false;
+		}
 	}
 
 	if (StrCmpi(name, LINK_USER_NAME) == 0)
@@ -491,32 +399,6 @@ void SetUserPolicy(USER *u, POLICY *policy)
 		OverwritePolicy(&u->Policy, policy);
 	}
 	Unlock(u->lock);
-}
-
-// Get user policy
-POLICY *GetUserPolicy(USER *u)
-{
-	POLICY *ret;
-	// Validate arguments
-	if (u == NULL)
-	{
-		return NULL;
-	}
-
-	Lock(u->lock);
-	{
-		if (u->Policy == NULL)
-		{
-			ret = NULL;
-		}
-		else
-		{
-			ret = ClonePolicy(u->Policy);
-		}
-	}
-	Unlock(u->lock);
-
-	return ret;
 }
 
 // Set group policy
@@ -675,7 +557,7 @@ void HashPassword(void *dst, char *username, char *password)
 	StrUpper(username_upper);
 	WriteBuf(b, password, StrLen(password));
 	WriteBuf(b, username_upper, StrLen(username_upper));
-	Hash(dst, b->Buf, b->Size, true);
+	Sha0(dst, b->Buf, b->Size);
 
 	FreeBuf(b);
 	Free(username_upper);
@@ -820,38 +702,6 @@ void SetUserAuthData(USER *u, UINT authtype, void *authdata)
 		// Set new authentication data
 		u->AuthType = authtype;
 		u->AuthData = authdata;
-	}
-	Unlock(u->lock);
-}
-
-// Cumulate group traffic data
-void AddGroupTraffic(USERGROUP *g, TRAFFIC *diff)
-{
-	// Validate arguments
-	if (g == NULL || diff == NULL)
-	{
-		return;
-	}
-
-	Lock(g->lock);
-	{
-		AddTraffic(g->Traffic, diff);
-	}
-	Unlock(g->lock);
-}
-
-// Cumulate user traffic data
-void AddUserTraffic(USER *u, TRAFFIC *diff)
-{
-	// Validate arguments
-	if (u == NULL || diff == NULL)
-	{
-		return;
-	}
-
-	Lock(u->lock);
-	{
-		AddTraffic(u->Traffic, diff);
 	}
 	Unlock(u->lock);
 }
@@ -1186,7 +1036,7 @@ void CleanupUser(USER *u)
 		ReleaseGroup(u->Group);
 	}
 
-	// Free authntication data
+	// Free authentication data
 	FreeAuthData(u->AuthType, u->AuthData);
 
 	if (u->Policy)
@@ -1200,7 +1050,7 @@ void CleanupUser(USER *u)
 	Free(u);
 }
 
-// Free authntication data
+// Free authentication data
 void FreeAuthData(UINT authtype, void *authdata)
 {
 	AUTHPASSWORD *pw = (AUTHPASSWORD *)authdata;
@@ -1422,7 +1272,49 @@ int CompareUserName(void *p1, void *p2)
 	return StrCmpi(u1->Name, u2->Name);
 }
 
+// Get the MAC address from the user's note string
+bool GetUserMacAddressFromUserNote(UCHAR *mac, wchar_t *note)
+{
+	bool ret = false;
+	UINT i;
 
-// Developed by SoftEther VPN Project at University of Tsukuba in Japan.
-// Department of Computer Science has dozens of overly-enthusiastic geeks.
-// Join us: http://www.tsukuba.ac.jp/english/admission/
+	Zero(mac, 6);
+	if (mac == NULL || note == NULL)
+	{
+		return false;
+	}
+
+	i = UniSearchStrEx(note, USER_MAC_STR_PREFIX, 0, false);
+	if (i != INFINITE)
+	{
+		wchar_t *macstr_start = &note[i + UniStrLen(USER_MAC_STR_PREFIX)];
+		wchar_t macstr2[MAX_SIZE];
+		UNI_TOKEN_LIST *tokens;
+
+		UniStrCpy(macstr2, sizeof(macstr2), macstr_start);
+
+		UniTrim(macstr2);
+
+		tokens = UniParseToken(macstr2, L" ,/()[].");
+		if (tokens != NULL)
+		{
+			if (tokens->NumTokens >= 1)
+			{
+				wchar_t *macstr = tokens->Token[0];
+
+				if (UniIsEmptyStr(macstr) == false)
+				{
+					char macstr_a[MAX_SIZE];
+
+					UniToStr(macstr_a, sizeof(macstr_a), macstr);
+
+					ret = StrToMac(mac, macstr_a);
+				}
+			}
+
+			UniFreeToken(tokens);
+		}
+	}
+
+	return ret;
+}

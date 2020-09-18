@@ -13,6 +13,7 @@
 #define B_SIMULATION                    3
 #define B_RESTORE                       3
 #define B_MESSAGE                       3
+#define B_PUSH                          3
 #define B_HUB_STATUS                    4
 #define IDCANCEL2                       4
 #define B_SECURE_MANAGER                4
@@ -34,6 +35,7 @@
 #define B_LEGAL3                        8
 #define B_LANGUAGE                      8
 #define B_STOP                          9
+#define B_AUTHORS                       9
 #define B_EDIT                          10
 #define S_STATUSBAR                     101
 #define ICO_TEST                        103
@@ -218,6 +220,7 @@
 #define ICO_RESEARCH                    239
 #define BMP_UNIVTSUKUBA                 240
 #define ICO_POLICE                      241
+#define ICO_LANG_TRADITIONAL_CHINESE    243
 #define S_TITLE                         1007
 #define S_INSERT_SECURE                 1008
 #define S_TITLE2                        1008
@@ -245,6 +248,7 @@
 #define S_SUFFIX                        1020
 #define E_PASSPHRASE                    1021
 #define S_STATUS7                       1021
+#define S_STATUS8                       1022
 #define E_USERNAME                      1023
 #define C_TYPE                          1024
 #define E_HUBNAME                       1024
@@ -313,6 +317,7 @@
 #define R_DIRECT_TCP                    1057
 #define R_HTTPS                         1059
 #define R_SOCKS                         1060
+#define R_SOCKS5                        1061
 #define S_USERNAME                      1062
 #define E_RETRY_SPAN                    1065
 #define C_HUBNAME                       1066
@@ -356,13 +361,12 @@
 #define B_IE                            1087
 #define B_EXPORT                        1088
 #define IDC_STATIC1                     1088
-#define R_R_NOTLS1                      1088
-#define R_NOTLS1                        1088
 #define R_USE_PASSWORD                  1089
 #define IDC_STATIC3                     1089
 #define B_IMPORT2                       1089
 #define B_REGENERATE                    1089
 #define B_FACTORY                       1089
+#define R_RETRY2                        1089
 #define R_REMOTE_ONLY                   1090
 #define IDC_STATIC4                     1090
 #define B_DELETE                        1091
@@ -392,7 +396,6 @@
 #define B_IPSEC                         1096
 #define S_INFO                          1097
 #define B_OPENVPN                       1097
-#define B_DEFAULT                       1097
 #define S_PORT                          1098
 #define B_BRIDGE2                       1098
 #define B_DDNS                          1098
@@ -706,7 +709,7 @@
 #define S_TSUKUBA2                      1281
 #define IDC_CHECK1                      1285
 #define R_NO_SAVE_PASSWORD              1285
-#define R_PROMISCUS                     1285
+#define R_PROMISCUOUS                   1285
 #define R_NO_ENUM                       1285
 #define R_ETHERNET                      1285
 #define R_CONTROLLER_ONLY               1285
@@ -931,7 +934,7 @@
 #define R_UNESTABLISHED                 1435
 #define R_USER                          1435
 #define R_CUSTOM                        1435
-#define S_DISBLE                        1435
+#define S_DISABLE                       1435
 #define R_PERMANENT                     1435
 #define R_FOR_SYSTEM                    1436
 #define IDC_NETADDRESS1                 1437
@@ -956,7 +959,7 @@
 #define S_WIN8                          1457
 #define R_OPENVPN                       1458
 #define S_UDP                           1459
-#define S_UDP2                          1460
+#define B_APPLY                         1460
 #define S_TOOL                          1461
 #define S_TOOL2                         1462
 #define R_SSTP                          1463
@@ -966,10 +969,12 @@
 #define E_IPV4                          1467
 #define E_NEWHOST                       1468
 #define B_NSLOOKUP                      1469
+#define E_KEY                           1469
 #define B_HINT                          1470
 #define S_DDNS                          1470
 #define R_OVER_ICMP                     1471
 #define S_AZURE                         1471
+#define B_HINT2                         1471
 #define R_OVER_ICMP2                    1472
 #define R_OVER_DNS                      1472
 #define B_WIZ_NEXT                      1472
@@ -1018,6 +1023,12 @@
 #define B_VGS                           1513
 #define S_VGS3                          1514
 #define S_TSUKUBA                       1515
+#define R_DISABLE_NATT                  1516
+#define S_SMARTCARD_ICON                1517
+#define L_VALUES_LIST                   1519
+#define B_HTTP_HEADER                   1520
+#define B_NEW                           1521
+#define B_CLEAR                         1522
 #define B_ONLINE                        1655
 #define D_NM_CONNECT                    1998
 #define D_NM_MAIN                       1999
@@ -1126,6 +1137,9 @@
 #define D_VGS_CONFIG                    2094
 #define D_VGS_OPTION                    2095
 #define D_VGS_WARNING                   2096
+#define D_DEFAULT3                      2097
+#define D_NM_PUSH                       2097
+#define D_CM_PROXY_HTTP_HEADER          2098
 #define ID_Menu40011                    40011
 #define CMD_CONNECT                     40020
 #define CMD_STATUS                      40021
@@ -1196,9 +1210,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        242
+#define _APS_NEXT_RESOURCE_VALUE        244
 #define _APS_NEXT_COMMAND_VALUE         40111
-#define _APS_NEXT_CONTROL_VALUE         1516
+#define _APS_NEXT_CONTROL_VALUE         1521
 #define _APS_NEXT_SYMED_VALUE           102
 #endif
 #endif

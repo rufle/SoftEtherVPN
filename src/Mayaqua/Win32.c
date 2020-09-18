@@ -1,90 +1,5 @@
-// SoftEther VPN Source Code
+// SoftEther VPN Source Code - Developer Edition Master Branch
 // Mayaqua Kernel
-// 
-// SoftEther VPN Server, Client and Bridge are free software under GPLv2.
-// 
-// Copyright (c) 2012-2014 Daiyuu Nobori.
-// Copyright (c) 2012-2014 SoftEther VPN Project, University of Tsukuba, Japan.
-// Copyright (c) 2012-2014 SoftEther Corporation.
-// 
-// All Rights Reserved.
-// 
-// http://www.softether.org/
-// 
-// Author: Daiyuu Nobori
-// Comments: Tetsuo Sugiyama, Ph.D.
-// 
-// 
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License
-// version 2 as published by the Free Software Foundation.
-// 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU General Public License for more details.
-// 
-// You should have received a copy of the GNU General Public License version 2
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-// IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-// CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-// TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-// SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-// 
-// THE LICENSE AGREEMENT IS ATTACHED ON THE SOURCE-CODE PACKAGE
-// AS "LICENSE.TXT" FILE. READ THE TEXT FILE IN ADVANCE TO USE THE SOFTWARE.
-// 
-// 
-// THIS SOFTWARE IS DEVELOPED IN JAPAN, AND DISTRIBUTED FROM JAPAN,
-// UNDER JAPANESE LAWS. YOU MUST AGREE IN ADVANCE TO USE, COPY, MODIFY,
-// MERGE, PUBLISH, DISTRIBUTE, SUBLICENSE, AND/OR SELL COPIES OF THIS
-// SOFTWARE, THAT ANY JURIDICAL DISPUTES WHICH ARE CONCERNED TO THIS
-// SOFTWARE OR ITS CONTENTS, AGAINST US (SOFTETHER PROJECT, SOFTETHER
-// CORPORATION, DAIYUU NOBORI OR OTHER SUPPLIERS), OR ANY JURIDICAL
-// DISPUTES AGAINST US WHICH ARE CAUSED BY ANY KIND OF USING, COPYING,
-// MODIFYING, MERGING, PUBLISHING, DISTRIBUTING, SUBLICENSING, AND/OR
-// SELLING COPIES OF THIS SOFTWARE SHALL BE REGARDED AS BE CONSTRUED AND
-// CONTROLLED BY JAPANESE LAWS, AND YOU MUST FURTHER CONSENT TO
-// EXCLUSIVE JURISDICTION AND VENUE IN THE COURTS SITTING IN TOKYO,
-// JAPAN. YOU MUST WAIVE ALL DEFENSES OF LACK OF PERSONAL JURISDICTION
-// AND FORUM NON CONVENIENS. PROCESS MAY BE SERVED ON EITHER PARTY IN
-// THE MANNER AUTHORIZED BY APPLICABLE LAW OR COURT RULE.
-// 
-// USE ONLY IN JAPAN. DO NOT USE IT IN OTHER COUNTRIES. IMPORTING THIS
-// SOFTWARE INTO OTHER COUNTRIES IS AT YOUR OWN RISK. SOME COUNTRIES
-// PROHIBIT ENCRYPTED COMMUNICATIONS. USING THIS SOFTWARE IN OTHER
-// COUNTRIES MIGHT BE RESTRICTED.
-// 
-// 
-// SOURCE CODE CONTRIBUTION
-// ------------------------
-// 
-// Your contribution to SoftEther VPN Project is much appreciated.
-// Please send patches to us through GitHub.
-// Read the SoftEther VPN Patch Acceptance Policy in advance:
-// http://www.softether.org/5-download/src/9.patch
-// 
-// 
-// DEAR SECURITY EXPERTS
-// ---------------------
-// 
-// If you find a bug or a security vulnerability please kindly inform us
-// about the problem immediately so that we can fix the security problem
-// to protect a lot of users around the world as soon as possible.
-// 
-// Our e-mail address for security reports is:
-// softether-vpn-security [at] softether.org
-// 
-// Please note that the above e-mail address is not a technical support
-// inquiry address. If you need technical assistance, please visit
-// http://www.softether.org/ and ask your question on the users forum.
-// 
-// Thank you for your cooperation.
 
 
 // Win32.c
@@ -527,7 +442,7 @@ DIRLIST *Win32EnumDirExW(wchar_t *dirname, COMPARE *compare)
 
 	UniStrCpy(tmp2, sizeof(tmp2), dirname);
 
-	if (UniStrLen(tmp2) >= 1 && tmp[UniStrLen(tmp2) - 1] == L'\\')
+	if (UniStrLen(tmp2) >= 1 && tmp2[UniStrLen(tmp2) - 1] == L'\\')
 	{
 		tmp2[UniStrLen(tmp2) - 1] = 0;
 	}
@@ -962,6 +877,24 @@ void Win32DebugAlert(char *msg)
 	MessageBox(NULL, msg, "Debug", MB_SETFOREGROUND | MB_TOPMOST | MB_SERVICE_NOTIFICATION | MB_OK | MB_ICONEXCLAMATION);
 }
 
+// Get the number of CPUs
+UINT Win32GetNumberOfCpuInner()
+{
+	UINT ret = 0;
+	SYSTEM_INFO info;
+
+	Zero(&info, sizeof(info));
+
+	GetSystemInfo(&info);
+
+	if (info.dwNumberOfProcessors >= 1 && info.dwNumberOfProcessors <= 128)
+	{
+		ret = info.dwNumberOfProcessors;
+	}
+
+	return ret;
+}
+
 // Get the OS information
 void Win32GetOsInfo(OS_INFO *info)
 {
@@ -1054,7 +987,7 @@ bool Win32GetVersionExInternal(void *info)
 		if (os.dwPlatformId == VER_PLATFORM_WIN32_NT)
 		{
 			if ((os.dwMajorVersion == 6 && os.dwMinorVersion >= 2) ||
-				(os.dwMajorVersion == 7))
+				(os.dwMajorVersion >= 7))
 			{
 				// Windows 8 later
 				return Win32GetVersionExInternalForWindows81orLater(info);
@@ -1070,6 +1003,9 @@ bool Win32GetVersionExInternalForWindows81orLater(void *info)
 {
 	OSVERSIONINFOEXA *ex = (OSVERSIONINFOEXA *)info;
 	char *str;
+	UINT major1 = 0, major2 = 0;
+	UINT minor1 = 0, minor2 = 0;
+	UINT major = 0, minor = 0;
 	// Validate arguments
 	if (info == NULL)
 	{
@@ -1099,21 +1035,40 @@ bool Win32GetVersionExInternalForWindows81orLater(void *info)
 
 		if (t != NULL && t->NumTokens == 2)
 		{
-			UINT major = ToInt(t->Token[0]);
-			UINT minor = ToInt(t->Token[1]);
-
-			if (major >= 6)
-			{
-				// Version number acquisition success
-				ex->dwMajorVersion = major;
-				ex->dwMinorVersion = minor;
-			}
+			major1 = ToInt(t->Token[0]);
+			minor1 = ToInt(t->Token[1]);
 		}
 
 		FreeToken(t);
 	}
 
 	Free(str);
+
+	major2 = MsRegReadIntEx2(REG_LOCAL_MACHINE,
+		"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion",
+		"CurrentMajorVersionNumber", false, true);
+
+	minor2 = MsRegReadIntEx2(REG_LOCAL_MACHINE,
+		"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion",
+		"CurrentMinorVersionNumber", false, true);
+
+	if ((major1 * 10000 + minor1) > (major2 * 10000 + minor2))
+	{
+		major = major1;
+		minor = minor1;
+	}
+	else
+	{
+		major = major2;
+		minor = minor2;
+	}
+
+	if (major >= 6)
+	{
+		// Version number acquisition success
+		ex->dwMajorVersion = major;
+		ex->dwMinorVersion = minor;
+	}
 
 	return true;
 }
@@ -1386,17 +1341,30 @@ UINT Win32GetOsType()
 						return OSTYPE_WINDOWS_SERVER_81;
 					}
 				}
+				else if ((os.dwMajorVersion == 6 && os.dwMinorVersion == 4) || (os.dwMajorVersion == 10 && os.dwMinorVersion == 0))
+				{
+					if (os.wProductType == VER_NT_WORKSTATION)
+					{
+						// Windows 10
+						return OSTYPE_WINDOWS_10;
+					}
+					else
+					{
+						// Windows Server 10
+						return OSTYPE_WINDOWS_SERVER_10;
+					}
+				}
 				else
 				{
 					if (os.wProductType == VER_NT_WORKSTATION)
 					{
-						// Windows 9?
-						return OSTYPE_WINDOWS_9;
+						// Windows 11 or later
+						return OSTYPE_WINDOWS_11;
 					}
 					else
 					{
-						// Windows Server 9?
-						return OSTYPE_WINDOWS_SERVER_9;
+						// Windows Server 11 or later
+						return OSTYPE_WINDOWS_SERVER_11;
 					}
 				}
 			}
@@ -3306,7 +3274,7 @@ bool Win32InputW(wchar_t *str, UINT size)
 	{
 		DWORD read_size = 0;
 
-		if (ReadConsoleW(hstdin, str, (size - sizeof(wchar_t)), &read_size, NULL))
+		if (ReadConsoleW(hstdin, str, (size / sizeof(wchar_t)) - 1, &read_size, NULL))
 		{
 			str[read_size] = 0;
 
@@ -3466,7 +3434,3 @@ void Win32PrintToFileW(wchar_t *str)
 #endif	// WIN32
 
 
-
-// Developed by SoftEther VPN Project at University of Tsukuba in Japan.
-// Department of Computer Science has dozens of overly-enthusiastic geeks.
-// Join us: http://www.tsukuba.ac.jp/english/admission/

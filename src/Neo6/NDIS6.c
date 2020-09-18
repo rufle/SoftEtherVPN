@@ -1,90 +1,5 @@
-// SoftEther VPN Source Code
+// SoftEther VPN Source Code - Developer Edition Master Branch
 // Kernel Device Driver
-// 
-// SoftEther VPN Server, Client and Bridge are free software under GPLv2.
-// 
-// Copyright (c) 2012-2014 Daiyuu Nobori.
-// Copyright (c) 2012-2014 SoftEther VPN Project, University of Tsukuba, Japan.
-// Copyright (c) 2012-2014 SoftEther Corporation.
-// 
-// All Rights Reserved.
-// 
-// http://www.softether.org/
-// 
-// Author: Daiyuu Nobori
-// Comments: Tetsuo Sugiyama, Ph.D.
-// 
-// 
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License
-// version 2 as published by the Free Software Foundation.
-// 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU General Public License for more details.
-// 
-// You should have received a copy of the GNU General Public License version 2
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-// IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-// CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-// TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-// SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-// 
-// THE LICENSE AGREEMENT IS ATTACHED ON THE SOURCE-CODE PACKAGE
-// AS "LICENSE.TXT" FILE. READ THE TEXT FILE IN ADVANCE TO USE THE SOFTWARE.
-// 
-// 
-// THIS SOFTWARE IS DEVELOPED IN JAPAN, AND DISTRIBUTED FROM JAPAN,
-// UNDER JAPANESE LAWS. YOU MUST AGREE IN ADVANCE TO USE, COPY, MODIFY,
-// MERGE, PUBLISH, DISTRIBUTE, SUBLICENSE, AND/OR SELL COPIES OF THIS
-// SOFTWARE, THAT ANY JURIDICAL DISPUTES WHICH ARE CONCERNED TO THIS
-// SOFTWARE OR ITS CONTENTS, AGAINST US (SOFTETHER PROJECT, SOFTETHER
-// CORPORATION, DAIYUU NOBORI OR OTHER SUPPLIERS), OR ANY JURIDICAL
-// DISPUTES AGAINST US WHICH ARE CAUSED BY ANY KIND OF USING, COPYING,
-// MODIFYING, MERGING, PUBLISHING, DISTRIBUTING, SUBLICENSING, AND/OR
-// SELLING COPIES OF THIS SOFTWARE SHALL BE REGARDED AS BE CONSTRUED AND
-// CONTROLLED BY JAPANESE LAWS, AND YOU MUST FURTHER CONSENT TO
-// EXCLUSIVE JURISDICTION AND VENUE IN THE COURTS SITTING IN TOKYO,
-// JAPAN. YOU MUST WAIVE ALL DEFENSES OF LACK OF PERSONAL JURISDICTION
-// AND FORUM NON CONVENIENS. PROCESS MAY BE SERVED ON EITHER PARTY IN
-// THE MANNER AUTHORIZED BY APPLICABLE LAW OR COURT RULE.
-// 
-// USE ONLY IN JAPAN. DO NOT USE IT IN OTHER COUNTRIES. IMPORTING THIS
-// SOFTWARE INTO OTHER COUNTRIES IS AT YOUR OWN RISK. SOME COUNTRIES
-// PROHIBIT ENCRYPTED COMMUNICATIONS. USING THIS SOFTWARE IN OTHER
-// COUNTRIES MIGHT BE RESTRICTED.
-// 
-// 
-// SOURCE CODE CONTRIBUTION
-// ------------------------
-// 
-// Your contribution to SoftEther VPN Project is much appreciated.
-// Please send patches to us through GitHub.
-// Read the SoftEther VPN Patch Acceptance Policy in advance:
-// http://www.softether.org/5-download/src/9.patch
-// 
-// 
-// DEAR SECURITY EXPERTS
-// ---------------------
-// 
-// If you find a bug or a security vulnerability please kindly inform us
-// about the problem immediately so that we can fix the security problem
-// to protect a lot of users around the world as soon as possible.
-// 
-// Our e-mail address for security reports is:
-// softether-vpn-security [at] softether.org
-// 
-// Please note that the above e-mail address is not a technical support
-// inquiry address. If you need technical assistance, please visit
-// http://www.softether.org/ and ask your question on the users forum.
-// 
-// Thank you for your cooperation.
 
 
 // NDIS6.c
@@ -98,6 +13,7 @@
 
 static UINT64 max_speed = NEO_MAX_SPEED_DEFAULT;
 static bool keep_link = false;
+static UINT reg_if_type = IF_TYPE_ETHERNET_CSMACD;
 
 BOOLEAN
 PsGetVersion(
@@ -187,11 +103,31 @@ NDIS_STATUS NeoNdisSetOptions(NDIS_HANDLE NdisDriverHandle, NDIS_HANDLE DriverCo
 
 NDIS_STATUS NeoNdisPause(NDIS_HANDLE MiniportAdapterContext, PNDIS_MINIPORT_PAUSE_PARAMETERS MiniportPauseParameters)
 {
+	UINT counter_dbg = 0;
+
+	ctx->Paused = true;
+
+	NeoLockPacketQueue();
+	NeoUnlockPacketQueue();
+
+	// Wait for complete all tasks
+	while (ctx->NumCurrentDispatch != 0)
+	{
+		NdisMSleep(10000);
+		counter_dbg++;
+		if (counter_dbg >= 1500)
+		{
+			break;
+		}
+	}
+
 	return NDIS_STATUS_SUCCESS;
 }
 
 NDIS_STATUS NeoNdisRestart(NDIS_HANDLE MiniportAdapterContext, PNDIS_MINIPORT_RESTART_PARAMETERS MiniportRestartParameters)
 {
+	ctx->Paused = false;
+
 	return NDIS_STATUS_SUCCESS;
 }
 
@@ -201,6 +137,7 @@ void NeoNdisReturnNetBufferLists(NDIS_HANDLE MiniportAdapterContext, PNET_BUFFER
 
 void NeoNdisCancelSend(NDIS_HANDLE MiniportAdapterContext, PVOID CancelId)
 {
+	//NeoNdisCrash2(__LINE__, __LINE__, __LINE__, __LINE__);
 }
 
 void NeoNdisDevicePnPEventNotify(NDIS_HANDLE MiniportAdapterContext, PNET_DEVICE_PNP_EVENT NetDevicePnPEvent)
@@ -213,6 +150,7 @@ void NeoNdisShutdownEx(NDIS_HANDLE MiniportAdapterContext, NDIS_SHUTDOWN_ACTION 
 
 void NeoNdisCancelOidRequest(NDIS_HANDLE MiniportAdapterContext, PVOID RequestId)
 {
+	//NeoNdisCrash2(__LINE__, __LINE__, __LINE__, __LINE__);
 }
 
 // Initialization handler of adapter
@@ -222,6 +160,7 @@ NDIS_STATUS NeoNdisInitEx(NDIS_HANDLE MiniportAdapterHandle,
 {
 	NDIS_MINIPORT_ADAPTER_REGISTRATION_ATTRIBUTES attr;
 	NDIS_MINIPORT_ADAPTER_GENERAL_ATTRIBUTES gen;
+	NDIS_PM_CAPABILITIES pnpcap;
 
 	if (ctx == NULL)
 	{
@@ -260,13 +199,13 @@ NDIS_STATUS NeoNdisInitEx(NDIS_HANDLE MiniportAdapterHandle,
 	ctx->Halting = FALSE;
 	ctx->Connected = ctx->ConnectedOld = FALSE;
 
-	if (keep_link == false)
+	//if (keep_link == false)
 	{
 		ctx->ConnectedForce = TRUE;
 	}
 
 	// Read the information from the registry
-	if (NeoLoadRegistory() == FALSE)
+	if (NeoLoadRegistry() == FALSE)
 	{
 		// Failure
 		ctx->Initing = FALSE;
@@ -283,6 +222,8 @@ NDIS_STATUS NeoNdisInitEx(NDIS_HANDLE MiniportAdapterHandle,
 	attr.MiniportAdapterContext = ctx->NdisContext;
 
 	NdisMSetMiniportAttributes(ctx->NdisMiniport, (PNDIS_MINIPORT_ADAPTER_ATTRIBUTES)&attr);
+
+	NeoZero(&pnpcap, sizeof(pnpcap));
 
 	NeoZero(&gen, sizeof(gen));
 	gen.Header.Type = NDIS_OBJECT_TYPE_MINIPORT_ADAPTER_GENERAL_ATTRIBUTES;
@@ -304,8 +245,8 @@ NDIS_STATUS NeoNdisInitEx(NDIS_HANDLE MiniportAdapterHandle,
 	gen.AccessType = NET_IF_ACCESS_BROADCAST;
 	gen.DirectionType = NET_IF_DIRECTION_SENDRECEIVE;
 	gen.ConnectionType = NET_IF_CONNECTION_DEDICATED;
-	gen.IfType = IF_TYPE_ETHERNET_CSMACD;
-	gen.IfConnectorPresent = TRUE;
+	gen.IfType = reg_if_type;
+	gen.IfConnectorPresent = FALSE;
 	gen.SupportedStatistics =
 		NDIS_STATISTICS_FLAGS_VALID_DIRECTED_FRAMES_RCV |
 		NDIS_STATISTICS_FLAGS_VALID_MULTICAST_FRAMES_RCV |
@@ -332,6 +273,15 @@ NDIS_STATUS NeoNdisInitEx(NDIS_HANDLE MiniportAdapterHandle,
 		NDIS_LINK_STATE_PAUSE_FUNCTIONS_AUTO_NEGOTIATED;
 	gen.SupportedOidList = SupportedOids;
 	gen.SupportedOidListLength = sizeof(SupportedOids);
+
+	NeoZero(&pnpcap, sizeof(pnpcap));
+	pnpcap.Header.Type = NDIS_OBJECT_TYPE_DEFAULT;
+	pnpcap.Header.Revision = NDIS_PM_CAPABILITIES_REVISION_1;
+	pnpcap.Header.Size = NDIS_SIZEOF_NDIS_PM_CAPABILITIES_REVISION_1;
+	pnpcap.MinMagicPacketWakeUp = NdisDeviceStateUnspecified;
+	pnpcap.MinPatternWakeUp  = NdisDeviceStateUnspecified;
+	pnpcap.MinLinkChangeWakeUp = NdisDeviceStateUnspecified;
+	gen.PowerManagementCapabilitiesEx = &pnpcap;
 
 	NdisMSetMiniportAttributes(ctx->NdisMiniport, (PNDIS_MINIPORT_ADAPTER_ATTRIBUTES)&gen);
 
@@ -364,7 +314,7 @@ BOOL NeoNdisOnOpen(IRP *irp, IO_STACK_LOCATION *stack)
 		return FALSE;
 	}
 
-	if (ctx->Opened != FALSE)
+	if (ctx->Opened)
 	{
 		// Another client is connected already
 		return FALSE;
@@ -391,6 +341,7 @@ BOOL NeoNdisOnOpen(IRP *irp, IO_STACK_LOCATION *stack)
 // Close the device
 BOOL NeoNdisOnClose(IRP *irp, IO_STACK_LOCATION *stack)
 {
+	NEO_EVENT *free_event = NULL;
 	if (ctx == NULL)
 	{
 		return FALSE;
@@ -403,12 +354,21 @@ BOOL NeoNdisOnClose(IRP *irp, IO_STACK_LOCATION *stack)
 	}
 	ctx->Opened = FALSE;
 
-	// Release the event
-	NeoFreeEvent(ctx->Event);
-	ctx->Event = NULL;
+	NeoLockPacketQueue();
+	{
+		// Release the event
+		free_event = ctx->Event;
+		ctx->Event = NULL;
 
-	// Release all packets
-	NeoClearPacketQueue();
+		// Release all packets
+		NeoClearPacketQueue(true);
+	}
+	NeoUnlockPacketQueue();
+
+	if (free_event != NULL)
+	{
+		NeoFreeEvent(free_event);
+	}
 
 	NeoSetConnectState(FALSE);
 
@@ -444,6 +404,8 @@ NTSTATUS NeoNdisDispatch(DEVICE_OBJECT *DeviceObject, IRP *Irp)
 		return NDIS_STATUS_FAILURE;
 	}
 
+	InterlockedIncrement(&ctx->NumCurrentDispatch);
+
 	// Get the IRP stack
 	stack = IoGetCurrentIrpStackLocation(Irp);
 
@@ -457,8 +419,11 @@ NTSTATUS NeoNdisDispatch(DEVICE_OBJECT *DeviceObject, IRP *Irp)
 	{
 		// Device driver is terminating
 		Irp->IoStatus.Information = STATUS_UNSUCCESSFUL;
+		InterlockedDecrement(&ctx->NumCurrentDispatch);
+
 		IoCompleteRequest(Irp, IO_NO_INCREMENT);
-		return STATUS_UNSUCCESSFUL;
+
+		return STATUS_SUCCESS;
 	}
 
 	// Branch to each operation
@@ -492,25 +457,36 @@ NTSTATUS NeoNdisDispatch(DEVICE_OBJECT *DeviceObject, IRP *Irp)
 				if (stack->Parameters.Read.Length == NEO_EXCHANGE_BUFFER_SIZE)
 				{
 					// Address check
-					MDL *mdl = IoAllocateMdl(buf, NEO_EXCHANGE_BUFFER_SIZE, false, false, NULL);
-
-					if (mdl != NULL)
+					bool check_ok = true;
+					__try
 					{
-						MmProbeAndLockPages(mdl, KernelMode, IoWriteAccess);
+						ProbeForWrite(buf, NEO_EXCHANGE_BUFFER_SIZE, 1);
+					}
+					__except (EXCEPTION_EXECUTE_HANDLER)
+					{
+						check_ok = false;
 					}
 
-					if (NeoIsKernelAddress(buf) == FALSE)
+					if (check_ok)
 					{
+						// Address check
+						MDL *mdl = IoAllocateMdl(buf, NEO_EXCHANGE_BUFFER_SIZE, false, false, NULL);
+
+						if (mdl != NULL)
+						{
+							MmProbeAndLockPages(mdl, KernelMode, IoWriteAccess);
+						}
+
 						// Read
 						NeoRead(buf);
 						Irp->IoStatus.Information = NEO_EXCHANGE_BUFFER_SIZE;
 						ok = true;
-					}
 
-					if (mdl != NULL)
-					{
-						MmUnlockPages(mdl);
-						IoFreeMdl(mdl);
+						if (mdl != NULL)
+						{
+							MmUnlockPages(mdl);
+							IoFreeMdl(mdl);
+						}
 					}
 				}
 			}
@@ -533,25 +509,45 @@ NTSTATUS NeoNdisDispatch(DEVICE_OBJECT *DeviceObject, IRP *Irp)
 				if (stack->Parameters.Write.Length == NEO_EXCHANGE_BUFFER_SIZE)
 				{
 					// Address check
-					MDL *mdl = IoAllocateMdl(buf, NEO_EXCHANGE_BUFFER_SIZE, false, false, NULL);
-
-					if (mdl != NULL)
+					bool check_ok = true;
+					__try
 					{
-						MmProbeAndLockPages(mdl, KernelMode, IoReadAccess);
+						ProbeForRead(buf, NEO_EXCHANGE_BUFFER_SIZE, 1);
+					}
+					__except (EXCEPTION_EXECUTE_HANDLER)
+					{
+						check_ok = false;
 					}
 
-					if (NeoIsKernelAddress(buf) == FALSE)
+					if (check_ok)
 					{
-						// Write
-						NeoWrite(buf);
-						Irp->IoStatus.Information = stack->Parameters.Write.Length;
-						ok = true;
-					}
+						// Address check
+						MDL *mdl = IoAllocateMdl(buf, NEO_EXCHANGE_BUFFER_SIZE, false, false, NULL);
 
-					if (mdl != NULL)
-					{
-						MmUnlockPages(mdl);
-						IoFreeMdl(mdl);
+						if (mdl != NULL)
+						{
+							MmProbeAndLockPages(mdl, KernelMode, IoReadAccess);
+						}
+						__try
+						{
+							ProbeForRead(buf, NEO_EXCHANGE_BUFFER_SIZE, 1);	
+						}
+						__except (EXCEPTION_EXECUTE_HANDLER)
+						{
+							check_ok = false;	
+						}
+						if (check_ok) {
+							// Write
+							NeoWrite(buf);
+							Irp->IoStatus.Information = stack->Parameters.Write.Length;
+							ok = true;
+
+							if (mdl != NULL)
+							{
+							MmUnlockPages(mdl);
+							IoFreeMdl(mdl);
+							}
+						}
 					}
 				}
 			}
@@ -564,6 +560,8 @@ NTSTATUS NeoNdisDispatch(DEVICE_OBJECT *DeviceObject, IRP *Irp)
 		}
 		break;
 	}
+
+	InterlockedDecrement(&ctx->NumCurrentDispatch);
 
 	IoCompleteRequest(Irp, IO_NO_INCREMENT);
 
@@ -595,6 +593,7 @@ void NeoInitControlDevice()
 		ctx->DispatchTable[IRP_MJ_WRITE] =
 		ctx->DispatchTable[IRP_MJ_DEVICE_CONTROL] = NeoNdisDispatch;
 	ctx->Opened = FALSE;
+	ctx->Paused = FALSE;
 
 	// Generate the device name
 	sprintf(name_kernel, NDIS_NEO_DEVICE_NAME, ctx->HardwareID);
@@ -652,7 +651,7 @@ void NeoFreeControlDevice()
 
 
 // Read the information from the registry
-BOOL NeoLoadRegistory()
+BOOL NeoLoadRegistry()
 {
 	void *buf;
 	NDIS_STATUS ret;
@@ -707,6 +706,12 @@ BOOL NeoLoadRegistory()
 	{
 		// Special MAC address
 		UINT ptr32 = (UINT)((UINT64)ctx);
+		LARGE_INTEGER current_time;
+		UCHAR *current_time_bytes;
+
+		KeQuerySystemTime(&current_time);
+
+		current_time_bytes = (UCHAR *)&current_time;
 
 		ctx->MacAddress[0] = 0x00;
 		ctx->MacAddress[1] = 0xAD;
@@ -714,6 +719,16 @@ BOOL NeoLoadRegistory()
 		ctx->MacAddress[3] = ((UCHAR *)(&ptr32))[1];
 		ctx->MacAddress[4] = ((UCHAR *)(&ptr32))[2];
 		ctx->MacAddress[5] = ((UCHAR *)(&ptr32))[3];
+
+		ctx->MacAddress[2] ^= current_time_bytes[0];
+		ctx->MacAddress[3] ^= current_time_bytes[1];
+		ctx->MacAddress[4] ^= current_time_bytes[2];
+		ctx->MacAddress[5] ^= current_time_bytes[3];
+
+		ctx->MacAddress[2] ^= current_time_bytes[4];
+		ctx->MacAddress[3] ^= current_time_bytes[5];
+		ctx->MacAddress[4] ^= current_time_bytes[6];
+		ctx->MacAddress[5] ^= current_time_bytes[7];
 	}
 
 	// Initialize the key name of the device name
@@ -784,6 +799,20 @@ BOOL NeoLoadRegistory()
 
 	keep_link = keep;
 
+	// Read the *IfType value
+	name = NewUnicode("*IfType");
+	NdisReadConfiguration(&ret, &param, config, GetUnicode(name), NdisParameterInteger);
+	FreeUnicode(name);
+
+	if (NG(ret) || param->ParameterType != NdisParameterInteger)
+	{
+		reg_if_type = IF_TYPE_ETHERNET_CSMACD;
+	}
+	else
+	{
+		reg_if_type = param->ParameterData.IntegerData;
+	}
+
 	// Close the config handle
 	NdisCloseConfiguration(config);
 
@@ -799,6 +828,8 @@ VOID NeoNdisDriverUnload(PDRIVER_OBJECT DriverObject)
 // Stop handler of adapter
 void NeoNdisHaltEx(NDIS_HANDLE MiniportAdapterContext, NDIS_HALT_ACTION HaltAction)
 {
+	NEO_EVENT *free_event = NULL;
+	UINT counter_dbg = 0;
 	if (ctx == NULL)
 	{
 		return;
@@ -811,14 +842,48 @@ void NeoNdisHaltEx(NDIS_HANDLE MiniportAdapterContext, NDIS_HALT_ACTION HaltActi
 	}
 	ctx->Halting = TRUE;
 
+	ctx->Opened = FALSE;
+
+	NeoLockPacketQueue();
+	{
+		// Release the event
+		free_event = ctx->Event;
+		ctx->Event = NULL;
+
+		// Release all packets
+		NeoClearPacketQueue(true);
+	}
+	NeoUnlockPacketQueue();
+
+	if (free_event != NULL)
+	{
+		NeoSet(free_event);
+	}
+
+	// Wait for complete all tasks
+	while (ctx->NumCurrentDispatch != 0)
+	{
+		NdisMSleep(10000);
+		counter_dbg++;
+		if (counter_dbg >= 1500)
+		{
+			break;
+		}
+	}
+
+	if (free_event != NULL)
+	{
+		NeoFreeEvent(free_event);
+	}
+
+	// Delete the control device
+	NeoFreeControlDevice();
+
 	// Stop the adapter
 	NeoStopAdapter();
 
 	// Release the packet array
 	NeoFreePacketArray();
-
-	// Delete the control device
-	NeoFreeControlDevice();
 
 	// Complete to stop
 	ctx->Initing = ctx->Inited = FALSE;
@@ -1273,9 +1338,32 @@ NDIS_STATUS NeoNdisSet(
 		*BytesRead = InformationBufferLength;
 
 		return NDIS_STATUS_SUCCESS;
+
+	case OID_PNP_SET_POWER:
+	case OID_PNP_QUERY_POWER:
+		// Power events
+		*BytesRead = InformationBufferLength;
+
+		return NDIS_STATUS_SUCCESS;
 	}
 
 	return NDIS_STATUS_INVALID_OID;
+}
+
+// Set status values of NET_BUFFER_LISTs
+void NeoNdisSetNetBufferListsStatus(NET_BUFFER_LIST *nbl, UINT status)
+{
+	if (nbl == NULL)
+	{
+		return;
+	}
+
+	while (nbl != NULL)
+	{
+		NET_BUFFER_LIST_STATUS(nbl) = status;
+
+		nbl = NET_BUFFER_LIST_NEXT_NBL(nbl);
+	}
 }
 
 // Packet send handler
@@ -1284,17 +1372,46 @@ void NeoNdisSendNetBufferLists(NDIS_HANDLE MiniportAdapterContext,
 							   NDIS_PORT_NUMBER PortNumber,
 							   ULONG SendFlags)
 {
+	bool is_dispatch_level = SendFlags & NDIS_SEND_FLAGS_DISPATCH_LEVEL;
+	UINT send_complete_flags = 0;
 	if (ctx == NULL)
 	{
 		return;
 	}
 
+	if (is_dispatch_level)
+	{
+		send_complete_flags |= NDIS_SEND_COMPLETE_FLAGS_DISPATCH_LEVEL;
+	}
+
+	InterlockedIncrement(&ctx->NumCurrentDispatch);
+
 	// Update the connection state
 	NeoCheckConnectState();
 
-	if (NeoNdisSendPacketsHaltCheck(NetBufferLists) == FALSE)
+	if (ctx->Halting != FALSE || ctx->Opened == FALSE || ctx->Paused)
 	{
-		// Device is stopped
+		UINT status = NDIS_STATUS_FAILURE;
+
+		if (ctx->Paused)
+		{
+			status = NDIS_STATUS_PAUSED;
+		}
+		else if (ctx->Halting)
+		{
+			status = NDIS_STATUS_FAILURE;
+		}
+		else if (ctx->Opened == false && keep_link)
+		{
+			status = NDIS_STATUS_SUCCESS;
+		}
+
+		NeoNdisSetNetBufferListsStatus(NetBufferLists, status);
+
+		InterlockedDecrement(&ctx->NumCurrentDispatch);
+
+		NdisMSendNetBufferListsComplete(ctx->NdisMiniport, NetBufferLists, send_complete_flags);
+
 		return;
 	}
 
@@ -1302,10 +1419,32 @@ void NeoNdisSendNetBufferLists(NDIS_HANDLE MiniportAdapterContext,
 	NeoLockPacketQueue();
 	{
 		NET_BUFFER_LIST *nbl;
-		if (NeoNdisSendPacketsHaltCheck(NetBufferLists) == FALSE)
+
+		if (ctx->Halting != FALSE || ctx->Opened == FALSE || ctx->Paused)
 		{
-			// Device is stopped
+			UINT status = NDIS_STATUS_FAILURE;
+
+			if (ctx->Paused)
+			{
+				status = NDIS_STATUS_PAUSED;
+			}
+			else if (ctx->Halting)
+			{
+				status = NDIS_STATUS_FAILURE;
+			}
+			else if (ctx->Opened == false && keep_link)
+			{
+				status = NDIS_STATUS_SUCCESS;
+			}
+
 			NeoUnlockPacketQueue();
+
+			NeoNdisSetNetBufferListsStatus(NetBufferLists, status);
+
+			InterlockedDecrement(&ctx->NumCurrentDispatch);
+
+			NdisMSendNetBufferListsComplete(ctx->NdisMiniport, NetBufferLists, send_complete_flags);
+
 			return;
 		}
 
@@ -1314,6 +1453,8 @@ void NeoNdisSendNetBufferLists(NDIS_HANDLE MiniportAdapterContext,
 		while (nbl != NULL)
 		{
 			NET_BUFFER *nb = NET_BUFFER_LIST_FIRST_NB(nbl);
+
+			NET_BUFFER_LIST_STATUS(nbl) = NDIS_STATUS_SUCCESS;
 
 			while (nb != NULL)
 			{
@@ -1367,33 +1508,15 @@ void NeoNdisSendNetBufferLists(NDIS_HANDLE MiniportAdapterContext,
 
 			nbl = NET_BUFFER_LIST_NEXT_NBL(nbl);
 		}
-	}
 
+		// Reception event
+		NeoSet(ctx->Event);
+	}
 	NeoUnlockPacketQueue();
 
 	// Notify the transmission completion
-	NdisMSendNetBufferListsComplete(ctx->NdisMiniport, NetBufferLists, NDIS_STATUS_SUCCESS);
-
-	// Reception event
-	NeoSet(ctx->Event);
-}
-
-// Stop check of packet transmission
-BOOL NeoNdisSendPacketsHaltCheck(NET_BUFFER_LIST *NetBufferLists)
-{
-	if (ctx == NULL)
-	{
-		return FALSE;
-	}
-
-	if (ctx->Halting != FALSE || ctx->Opened == FALSE)
-	{
-		// Halting
-		NdisMSendNetBufferListsComplete(ctx->NdisMiniport, NetBufferLists, NDIS_STATUS_FAILURE);
-
-		return FALSE;
-	}
-	return TRUE;
+	InterlockedDecrement(&ctx->NumCurrentDispatch);
+	NdisMSendNetBufferListsComplete(ctx->NdisMiniport, NetBufferLists, send_complete_flags);
 }
 
 // Initialize the packet array
@@ -1452,26 +1575,13 @@ PACKET_BUFFER *NeoNewPacketBuffer()
 	p1.ProtocolId = NDIS_PROTOCOL_ID_DEFAULT;
 	p1.fAllocateNetBuffer = TRUE;
 	p1.DataSize = NEO_MAX_PACKET_SIZE;
+	p1.PoolTag = 'SETH';
 	p->NetBufferListPool = NdisAllocateNetBufferListPool(NULL, &p1);
 
 	// Create a NET_BUFFER_LIST
 	p->NetBufferList = NdisAllocateNetBufferList(p->NetBufferListPool, 0, 0);
 
 	return p;
-}
-
-// Check whether the specified address is kernel memory
-BOOL NeoIsKernelAddress(void *addr)
-{
-#if	0
-	if ((ULONG)addr >= (ULONG)0x80000000)
-	{
-		// Kernel memory
-		return TRUE;
-	}
-#endif	// CPU_64
-	// User memory
-	return FALSE;
 }
 
 // Reset the event
@@ -1725,7 +1835,7 @@ void *NeoMalloc(UINT size)
 	}
 
 	// Allocate the non-paged memory
-	r = NdisAllocateMemoryWithTag(&p, size, 0);
+	r = NdisAllocateMemoryWithTag(&p, size, 'SETH');
 
 	if (NG(r))
 	{
@@ -1748,7 +1858,3 @@ void NeoFree(void *p)
 }
 
 
-
-// Developed by SoftEther VPN Project at University of Tsukuba in Japan.
-// Department of Computer Science has dozens of overly-enthusiastic geeks.
-// Join us: http://www.tsukuba.ac.jp/english/admission/

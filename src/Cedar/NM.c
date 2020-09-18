@@ -1,90 +1,5 @@
-// SoftEther VPN Source Code
+// SoftEther VPN Source Code - Developer Edition Master Branch
 // Cedar Communication Module
-// 
-// SoftEther VPN Server, Client and Bridge are free software under GPLv2.
-// 
-// Copyright (c) 2012-2014 Daiyuu Nobori.
-// Copyright (c) 2012-2014 SoftEther VPN Project, University of Tsukuba, Japan.
-// Copyright (c) 2012-2014 SoftEther Corporation.
-// 
-// All Rights Reserved.
-// 
-// http://www.softether.org/
-// 
-// Author: Daiyuu Nobori
-// Comments: Tetsuo Sugiyama, Ph.D.
-// 
-// 
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License
-// version 2 as published by the Free Software Foundation.
-// 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU General Public License for more details.
-// 
-// You should have received a copy of the GNU General Public License version 2
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-// IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-// CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-// TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-// SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-// 
-// THE LICENSE AGREEMENT IS ATTACHED ON THE SOURCE-CODE PACKAGE
-// AS "LICENSE.TXT" FILE. READ THE TEXT FILE IN ADVANCE TO USE THE SOFTWARE.
-// 
-// 
-// THIS SOFTWARE IS DEVELOPED IN JAPAN, AND DISTRIBUTED FROM JAPAN,
-// UNDER JAPANESE LAWS. YOU MUST AGREE IN ADVANCE TO USE, COPY, MODIFY,
-// MERGE, PUBLISH, DISTRIBUTE, SUBLICENSE, AND/OR SELL COPIES OF THIS
-// SOFTWARE, THAT ANY JURIDICAL DISPUTES WHICH ARE CONCERNED TO THIS
-// SOFTWARE OR ITS CONTENTS, AGAINST US (SOFTETHER PROJECT, SOFTETHER
-// CORPORATION, DAIYUU NOBORI OR OTHER SUPPLIERS), OR ANY JURIDICAL
-// DISPUTES AGAINST US WHICH ARE CAUSED BY ANY KIND OF USING, COPYING,
-// MODIFYING, MERGING, PUBLISHING, DISTRIBUTING, SUBLICENSING, AND/OR
-// SELLING COPIES OF THIS SOFTWARE SHALL BE REGARDED AS BE CONSTRUED AND
-// CONTROLLED BY JAPANESE LAWS, AND YOU MUST FURTHER CONSENT TO
-// EXCLUSIVE JURISDICTION AND VENUE IN THE COURTS SITTING IN TOKYO,
-// JAPAN. YOU MUST WAIVE ALL DEFENSES OF LACK OF PERSONAL JURISDICTION
-// AND FORUM NON CONVENIENS. PROCESS MAY BE SERVED ON EITHER PARTY IN
-// THE MANNER AUTHORIZED BY APPLICABLE LAW OR COURT RULE.
-// 
-// USE ONLY IN JAPAN. DO NOT USE IT IN OTHER COUNTRIES. IMPORTING THIS
-// SOFTWARE INTO OTHER COUNTRIES IS AT YOUR OWN RISK. SOME COUNTRIES
-// PROHIBIT ENCRYPTED COMMUNICATIONS. USING THIS SOFTWARE IN OTHER
-// COUNTRIES MIGHT BE RESTRICTED.
-// 
-// 
-// SOURCE CODE CONTRIBUTION
-// ------------------------
-// 
-// Your contribution to SoftEther VPN Project is much appreciated.
-// Please send patches to us through GitHub.
-// Read the SoftEther VPN Patch Acceptance Policy in advance:
-// http://www.softether.org/5-download/src/9.patch
-// 
-// 
-// DEAR SECURITY EXPERTS
-// ---------------------
-// 
-// If you find a bug or a security vulnerability please kindly inform us
-// about the problem immediately so that we can fix the security problem
-// to protect a lot of users around the world as soon as possible.
-// 
-// Our e-mail address for security reports is:
-// softether-vpn-security [at] softether.org
-// 
-// Please note that the above e-mail address is not a technical support
-// inquiry address. If you need technical assistance, please visit
-// http://www.softether.org/ and ask your question on the users forum.
-// 
-// Thank you for your cooperation.
 
 
 // NM.c
@@ -125,6 +40,87 @@
 // Global variable
 static NM *nm = NULL;
 
+// Dialog proc for the push routing option
+UINT NmEditPushRouteProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam, void *param)
+{
+	SM_HUB *r = (SM_HUB *)param;
+	char *str = NULL;
+	// Validate arguments
+	if (hWnd == NULL)
+	{
+		return 0;
+	}
+
+	switch (msg)
+	{
+	case WM_INITDIALOG:
+		SetTextA(hWnd, E_TEXT, r->CurrentPushRouteStr);
+		Focus(hWnd, E_TEXT);
+
+		SetIcon(hWnd, 0, ICO_PROTOCOL);
+		break;
+
+	case WM_COMMAND:
+		switch (wParam)
+		{
+		case IDOK:
+			str = GetTextA(hWnd, E_TEXT);
+			if (str != NULL)
+			{
+				bool ok = true;
+
+				if (CheckClasslessRouteTableStr(str) == false)
+				{
+					if (MsgBox(hWnd, MB_ICONWARNING | MB_OKCANCEL | MB_DEFBUTTON2, _UU("NM_PUSH_ROUTE_WARNING")) == IDCANCEL)
+					{
+						ok = false;
+					}
+				}
+
+				if (ok)
+				{
+					if (IsEmptyStr(str) == false)
+					{
+						if (GetCapsBool(r->p->CapsList, "b_suppport_push_route") == false)
+						{
+							MsgBox(hWnd, MB_ICONEXCLAMATION, _UU("ERR_147"));
+						}
+					}
+
+					StrCpy(r->CurrentPushRouteStr, sizeof(r->CurrentPushRouteStr), str);
+
+					EndDialog(hWnd, 1);
+				}
+
+				Free(str);
+			}
+			break;
+
+		case IDCANCEL:
+			Close(hWnd);
+			break;
+		}
+		break;
+
+	case WM_CLOSE:
+		EndDialog(hWnd, 0);
+		break;
+	}
+
+	return 0;
+}
+
+// Edit dialog for the push routing option
+bool NmEditPushRoute(HWND hWnd, SM_HUB *r)
+{
+	// Validate arguments
+	if (r == NULL)
+	{
+		return false;
+	}
+
+	return Dialog(hWnd, D_NM_PUSH, NmEditPushRouteProc, r);
+}
 
 // Change Password dialog
 UINT NmChangePasswordProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam, void *param)
@@ -161,7 +157,7 @@ UINT NmChangePasswordProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam, voi
 		{
 		case IDOK:
 			Zero(&t, sizeof(t));
-			Hash(t.HashedPassword, tmp1, StrLen(tmp1), true);
+			Sha0(t.HashedPassword, tmp1, StrLen(tmp1));
 
 			if (CALL(hWnd, NcSetPassword(r, &t)))
 			{
@@ -682,6 +678,7 @@ bool NmStatus(HWND hWnd, SM_SERVER *s, void *param)
 	LvInsertAdd(b, ICO_PROTOCOL_DHCP, NULL, 2, _UU("NM_STATUS_DHCP"), tmp);
 
 	LvInsertAdd(b, ICO_MACHINE, NULL, 2, _UU("SM_SNAT_IS_KERNEL"), t.IsKernelMode ? _UU("SEC_YES") : _UU("SEC_NO"));
+	LvInsertAdd(b, ICO_MACHINE, NULL, 2, _UU("SM_SNAT_IS_RAW"), t.IsRawIpMode ? _UU("SEC_YES") : _UU("SEC_NO"));
 
 	LvInsertEnd(b, hWnd, L_STATUS);
 
@@ -745,6 +742,8 @@ void NmEditVhOptionInit(HWND hWnd, SM_HUB *r)
 		return;
 	}
 
+	SetIcon(hWnd, 0, ICO_ROUTER);
+
 	FormatText(hWnd, S_TITLE, r->HubName);
 
 	Zero(&t, sizeof(VH_OPTION));
@@ -794,6 +793,15 @@ void NmEditVhOptionInit(HWND hWnd, SM_HUB *r)
 
 	SetTextA(hWnd, E_DOMAIN, t.DhcpDomainName);
 	Check(hWnd, R_SAVE_LOG, t.SaveLog);
+
+	StrCpy(r->CurrentPushRouteStr, sizeof(r->CurrentPushRouteStr), t.DhcpPushRoutes);
+
+	if (GetCapsBool(r->p->CapsList, "b_suppport_push_route_config") == false)
+	{
+		Disable(hWnd, S_1);
+		Disable(hWnd, S_2);
+		Disable(hWnd, B_PUSH);
+	}
 
 	NmEditVhOptionUpdate(hWnd, r);
 
@@ -929,6 +937,9 @@ void NmEditVhOptionOnOk(HWND hWnd, SM_HUB *r)
 	NmEditVhOptionFormToVH(hWnd, &t);
 	StrCpy(t.HubName, sizeof(t.HubName), r->HubName);
 
+	t.ApplyDhcpPushRoutes = true;
+	StrCpy(t.DhcpPushRoutes, sizeof(t.DhcpPushRoutes), r->CurrentPushRouteStr);
+
 	if (CALL(hWnd, ScSetSecureNATOption(r->Rpc, &t)))
 	{
 		EndDialog(hWnd, true);
@@ -996,6 +1007,10 @@ UINT NmEditVhOptionProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam, void 
 				Focus(hWnd, E_DHCP_START);
 			}
 			break;
+
+		case B_PUSH:
+			NmEditPushRoute(hWnd, r);
+			break;
 		}
 
 		break;
@@ -1013,6 +1028,7 @@ void NmEditVhOption(HWND hWnd, SM_HUB *r)
 		return;
 	}
 
+	Zero(r->CurrentPushRouteStr, sizeof(r->CurrentPushRouteStr));
 	Dialog(hWnd, D_NM_OPTION, NmEditVhOptionProc, r);
 }
 
@@ -1289,7 +1305,7 @@ UINT NmLogin(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam, void *param)
 		{
 		case IDOK:
 			GetTxtA(hWnd, E_PASSWORD, tmp, sizeof(tmp));
-			Hash(login->hashed_password, tmp, StrLen(tmp), true);
+			Sha0(login->hashed_password, tmp, StrLen(tmp));
 			EndDialog(hWnd, true);
 			break;
 
@@ -1341,7 +1357,7 @@ RETRY_PASSWORD:
 				Zero(&login, sizeof(login));
 				login.Hostname = t->Hostname;
 				login.Port = t->Port;
-				Hash(login.hashed_password, "", 0, true);
+				Sha0(login.hashed_password, "", 0);
 
 				if (flag)
 				{
@@ -1519,7 +1535,3 @@ void NMExec()
 
 #endif
 
-
-// Developed by SoftEther VPN Project at University of Tsukuba in Japan.
-// Department of Computer Science has dozens of overly-enthusiastic geeks.
-// Join us: http://www.tsukuba.ac.jp/english/admission/

@@ -1,90 +1,5 @@
-// SoftEther VPN Source Code
+// SoftEther VPN Source Code - Developer Edition Master Branch
 // Cedar Communication Module
-// 
-// SoftEther VPN Server, Client and Bridge are free software under GPLv2.
-// 
-// Copyright (c) 2012-2014 Daiyuu Nobori.
-// Copyright (c) 2012-2014 SoftEther VPN Project, University of Tsukuba, Japan.
-// Copyright (c) 2012-2014 SoftEther Corporation.
-// 
-// All Rights Reserved.
-// 
-// http://www.softether.org/
-// 
-// Author: Daiyuu Nobori
-// Comments: Tetsuo Sugiyama, Ph.D.
-// 
-// 
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License
-// version 2 as published by the Free Software Foundation.
-// 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU General Public License for more details.
-// 
-// You should have received a copy of the GNU General Public License version 2
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-// IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-// CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-// TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-// SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-// 
-// THE LICENSE AGREEMENT IS ATTACHED ON THE SOURCE-CODE PACKAGE
-// AS "LICENSE.TXT" FILE. READ THE TEXT FILE IN ADVANCE TO USE THE SOFTWARE.
-// 
-// 
-// THIS SOFTWARE IS DEVELOPED IN JAPAN, AND DISTRIBUTED FROM JAPAN,
-// UNDER JAPANESE LAWS. YOU MUST AGREE IN ADVANCE TO USE, COPY, MODIFY,
-// MERGE, PUBLISH, DISTRIBUTE, SUBLICENSE, AND/OR SELL COPIES OF THIS
-// SOFTWARE, THAT ANY JURIDICAL DISPUTES WHICH ARE CONCERNED TO THIS
-// SOFTWARE OR ITS CONTENTS, AGAINST US (SOFTETHER PROJECT, SOFTETHER
-// CORPORATION, DAIYUU NOBORI OR OTHER SUPPLIERS), OR ANY JURIDICAL
-// DISPUTES AGAINST US WHICH ARE CAUSED BY ANY KIND OF USING, COPYING,
-// MODIFYING, MERGING, PUBLISHING, DISTRIBUTING, SUBLICENSING, AND/OR
-// SELLING COPIES OF THIS SOFTWARE SHALL BE REGARDED AS BE CONSTRUED AND
-// CONTROLLED BY JAPANESE LAWS, AND YOU MUST FURTHER CONSENT TO
-// EXCLUSIVE JURISDICTION AND VENUE IN THE COURTS SITTING IN TOKYO,
-// JAPAN. YOU MUST WAIVE ALL DEFENSES OF LACK OF PERSONAL JURISDICTION
-// AND FORUM NON CONVENIENS. PROCESS MAY BE SERVED ON EITHER PARTY IN
-// THE MANNER AUTHORIZED BY APPLICABLE LAW OR COURT RULE.
-// 
-// USE ONLY IN JAPAN. DO NOT USE IT IN OTHER COUNTRIES. IMPORTING THIS
-// SOFTWARE INTO OTHER COUNTRIES IS AT YOUR OWN RISK. SOME COUNTRIES
-// PROHIBIT ENCRYPTED COMMUNICATIONS. USING THIS SOFTWARE IN OTHER
-// COUNTRIES MIGHT BE RESTRICTED.
-// 
-// 
-// SOURCE CODE CONTRIBUTION
-// ------------------------
-// 
-// Your contribution to SoftEther VPN Project is much appreciated.
-// Please send patches to us through GitHub.
-// Read the SoftEther VPN Patch Acceptance Policy in advance:
-// http://www.softether.org/5-download/src/9.patch
-// 
-// 
-// DEAR SECURITY EXPERTS
-// ---------------------
-// 
-// If you find a bug or a security vulnerability please kindly inform us
-// about the problem immediately so that we can fix the security problem
-// to protect a lot of users around the world as soon as possible.
-// 
-// Our e-mail address for security reports is:
-// softether-vpn-security [at] softether.org
-// 
-// Please note that the above e-mail address is not a technical support
-// inquiry address. If you need technical assistance, please visit
-// http://www.softether.org/ and ask your question on the users forum.
-// 
-// Thank you for your cooperation.
 
 
 // Virtual.h
@@ -94,10 +9,13 @@
 #define	VIRTUAL_H
 
 
+#define	NN_RAW_IP_PORT_START			61001
+#define	NN_RAW_IP_PORT_END				65535
+
 #define	VIRTUAL_TCP_SEND_TIMEOUT		(21 * 1000)
 
-#define	NN_NEXT_WAIT_TIME_FOR_DEVICE_ENUM	(60 * 1000)
-#define	NN_NEXT_WAIT_TIME_MAX_FAIL_COUNT	15
+#define	NN_NEXT_WAIT_TIME_FOR_DEVICE_ENUM	(30 * 1000)
+#define	NN_NEXT_WAIT_TIME_MAX_FAIL_COUNT	30
 
 #define	NN_HOSTNAME_FORMAT				"securenat-%s"
 #define	NN_HOSTNAME_STARTWITH			"securenat-"
@@ -170,6 +88,7 @@ struct NATIVE_NAT
 	LIST *IpCombine;				// IP combining list
 	UINT CurrentIpQuota;			// Current IP combining quota
 	UCHAR CurrentMacAddress[6];		// Current MAC address
+	bool IsRawIpMode;				// Is RAW_IP mode
 };
 
 // ARP entry
@@ -304,6 +223,7 @@ struct NAT_ENTRY
 	UINT64 SendSeq;					// Send sequence number
 	UINT64 RecvSeqInit;				// Initial receive sequence number
 	UINT64 RecvSeq;					// Receive sequence number
+	UINT FinSentSeq;				// Sequence number with the last FIN
 
 	bool CurrentSendingMission;		// Burst transmission ongoing
 	UINT SendMissionSize;			// Transmission size of this time
@@ -314,8 +234,12 @@ struct NAT_ENTRY
 	UINT64 CalcRTTStartValue;		// RTT measurement start value
 
 	bool TcpFinished;				// Data communication end flag of TCP
+	bool TcpDisconnected;			// TCP Disconnect flag
+	bool TcpForceReset;				// TCP connection force reset flag
 	UINT64 FinSentTime;				// Time which the FIN was sent last
 	UINT FinSentCount;				// Number of FIN transmissions
+
+	UINT64 test_TotalSent;
 };
 
 
@@ -372,8 +296,10 @@ struct VH
 	UINT DhcpDns2;					// DNS server address 2
 	char DhcpDomain[MAX_HOST_NAME_LEN + 1];	// Assigned domain name
 	LIST *DhcpLeaseList;			// DHCP lease list
+	LIST *DhcpPendingLeaseList;		// Pending DHCP lease list
 	UINT64 LastDhcpPolling;			// Time which the DHCP list polled last
 	bool SaveLog;					// Save a log
+	DHCP_CLASSLESS_ROUTE_TABLE PushRoute;	// Pushing routing table
 	COUNTER *Counter;				// Session counter
 	UINT DhcpId;					// DHCP ID
 	UINT64 LastSendBeacon;			// Time which the beacon has been sent last
@@ -408,6 +334,8 @@ struct VH_OPTION
 	IP DhcpDnsServerAddress2;		// Assigned DNS server address 2
 	char DhcpDomainName[MAX_HOST_NAME_LEN + 1];	// Assigned domain name
 	bool SaveLog;					// Save a log
+	bool ApplyDhcpPushRoutes;		// Apply flag for DhcpPushRoutes
+	char DhcpPushRoutes[MAX_DHCP_CLASSLESS_ROUTE_TABLE_STR_SIZE];	// DHCP pushing routes
 };
 
 // DHCP lease entry
@@ -481,8 +409,6 @@ ARP_ENTRY *SearchArpTable(VH *v, UINT ip);
 void RefreshArpTable(VH *v);
 void PollingArpTable(VH *v);
 void InsertArpTable(VH *v, UCHAR *mac, UINT ip);
-bool IsMacBroadcast(UCHAR *mac);
-bool IsMacInvalid(UCHAR *mac);
 void InitArpWaitTable(VH *v);
 void FreeArpWaitTable(VH *v);
 int CompareArpWaitTable(void *p1, void *p2);
@@ -561,9 +487,7 @@ void SendTcp(VH *v, UINT src_ip, UINT src_port, UINT dest_ip, UINT dest_port, UI
 void DnsProxy(VH *v, UINT src_ip, UINT src_port, UINT dest_ip, UINT dest_port, void *data, UINT size);
 bool ParseDnsPacket(VH *v, UINT src_ip, UINT src_port, UINT dest_ip, UINT dest_port, void *data, UINT size);
 bool ParseDnsPacketEx(VH *v, UINT src_ip, UINT src_port, UINT dest_ip, UINT dest_port, void *data, UINT size, DNS_PARSED_PACKET *parsed_result);
-bool ParseDnsQuery(char *name, UINT name_size, void *data, UINT data_size);
 void SetDnsProxyVgsHostname(char *hostname);
-UCHAR GetNextByte(BUF *b);
 bool NatTransactDns(VH *v, NAT_ENTRY *n);
 void NatDnsThread(THREAD *t, void *param);
 bool NatGetIP(IP *ip, char *hostname);
@@ -586,9 +510,12 @@ int CompareDhcpLeaseList(void *p1, void *p2);
 DHCP_LEASE *NewDhcpLease(UINT expire, UCHAR *mac_address, UINT ip, UINT mask, char *hostname);
 void FreeDhcpLease(DHCP_LEASE *d);
 DHCP_LEASE *SearchDhcpLeaseByMac(VH *v, UCHAR *mac);
+DHCP_LEASE *SearchDhcpPendingLeaseByMac(VH *v, UCHAR *mac);
 DHCP_LEASE *SearchDhcpLeaseByIp(VH *v, UINT ip);
+DHCP_LEASE *SearchDhcpPendingLeaseByIp(VH *v, UINT ip);
 UINT ServeDhcpDiscover(VH *v, UCHAR *mac, UINT request_ip);
 UINT GetFreeDhcpIpAddress(VH *v);
+UINT GetFreeDhcpIpAddressByRandom(VH *v, UCHAR *mac);
 UINT ServeDhcpRequest(VH *v, UCHAR *mac, UINT request_ip);
 void VirtualDhcpSend(VH *v, UINT tran_id, UINT dest_ip, UINT dest_port,
 					 UINT new_ip, UCHAR *client_mac, BUF *b, UINT hw_type, UINT hw_addr_size);
@@ -613,7 +540,7 @@ BUF *NnBuildDnsQueryPacket(char *hostname, USHORT tran_id);
 BUF *NnBuildUdpPacket(BUF *payload, UINT src_ip, USHORT src_port, UINT dst_ip, USHORT dst_port);
 BUF *NnBuildTcpPacket(BUF *payload, UINT src_ip, USHORT src_port, UINT dst_ip, USHORT dst_port, UINT seq, UINT ack, UINT flag, UINT window_size, UINT mss);
 BUF *NnBuildIpPacket(BUF *payload, UINT src_ip, UINT dst_ip, UCHAR protocol, UCHAR ttl);
-UINT NnGenSrcPort();
+UINT NnGenSrcPort(bool raw_ip_mode);
 bool NnParseDnsResponsePacket(UCHAR *data, UINT size, IP *ret_ip);
 BUF *NnReadDnsRecord(BUF *buf, bool answer, USHORT *ret_type, USHORT *ret_class);
 bool NnReadDnsLabel(BUF *buf);
@@ -626,6 +553,7 @@ UINT GetHashNativeNatTableForRecv(void *p);
 void NnSetNat(NATIVE_NAT_ENTRY *e, UINT protocol, UINT src_ip, UINT src_port, UINT dest_ip, UINT dest_port, UINT pub_ip, UINT pub_port);
 
 bool NnIsActive(VH *v);
+bool NnIsActiveEx(VH *v, bool *is_ipraw_mode);
 void NnUdpRecvForInternet(VH *v, UINT src_ip, UINT src_port, UINT dest_ip, UINT dest_port, void *data, UINT size, UINT max_l3_size);
 void NnTcpRecvForInternet(VH *v, UINT src_ip, UINT src_port, UINT dest_ip, UINT dest_port, TCP_HEADER *old_tcp, void *data, UINT size, UINT max_l3_size);
 void NnIcmpEchoRecvForInternet(VH *v, UINT src_ip, UINT dest_ip, void *data, UINT size, UCHAR ttl, void *icmp_data, UINT icmp_size, UCHAR *ip_header, UINT ip_header_size, UINT max_l3_size);
@@ -663,7 +591,3 @@ void NnSetSecureNatTargetHostname(char *name);
 #endif	// VIRTUAL_H
 
 
-
-// Developed by SoftEther VPN Project at University of Tsukuba in Japan.
-// Department of Computer Science has dozens of overly-enthusiastic geeks.
-// Join us: http://www.tsukuba.ac.jp/english/admission/

@@ -1,90 +1,5 @@
-// SoftEther VPN Source Code
+// SoftEther VPN Source Code - Developer Edition Master Branch
 // Mayaqua Kernel
-// 
-// SoftEther VPN Server, Client and Bridge are free software under GPLv2.
-// 
-// Copyright (c) 2012-2014 Daiyuu Nobori.
-// Copyright (c) 2012-2014 SoftEther VPN Project, University of Tsukuba, Japan.
-// Copyright (c) 2012-2014 SoftEther Corporation.
-// 
-// All Rights Reserved.
-// 
-// http://www.softether.org/
-// 
-// Author: Daiyuu Nobori
-// Comments: Tetsuo Sugiyama, Ph.D.
-// 
-// 
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License
-// version 2 as published by the Free Software Foundation.
-// 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU General Public License for more details.
-// 
-// You should have received a copy of the GNU General Public License version 2
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-// IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-// CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-// TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-// SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-// 
-// THE LICENSE AGREEMENT IS ATTACHED ON THE SOURCE-CODE PACKAGE
-// AS "LICENSE.TXT" FILE. READ THE TEXT FILE IN ADVANCE TO USE THE SOFTWARE.
-// 
-// 
-// THIS SOFTWARE IS DEVELOPED IN JAPAN, AND DISTRIBUTED FROM JAPAN,
-// UNDER JAPANESE LAWS. YOU MUST AGREE IN ADVANCE TO USE, COPY, MODIFY,
-// MERGE, PUBLISH, DISTRIBUTE, SUBLICENSE, AND/OR SELL COPIES OF THIS
-// SOFTWARE, THAT ANY JURIDICAL DISPUTES WHICH ARE CONCERNED TO THIS
-// SOFTWARE OR ITS CONTENTS, AGAINST US (SOFTETHER PROJECT, SOFTETHER
-// CORPORATION, DAIYUU NOBORI OR OTHER SUPPLIERS), OR ANY JURIDICAL
-// DISPUTES AGAINST US WHICH ARE CAUSED BY ANY KIND OF USING, COPYING,
-// MODIFYING, MERGING, PUBLISHING, DISTRIBUTING, SUBLICENSING, AND/OR
-// SELLING COPIES OF THIS SOFTWARE SHALL BE REGARDED AS BE CONSTRUED AND
-// CONTROLLED BY JAPANESE LAWS, AND YOU MUST FURTHER CONSENT TO
-// EXCLUSIVE JURISDICTION AND VENUE IN THE COURTS SITTING IN TOKYO,
-// JAPAN. YOU MUST WAIVE ALL DEFENSES OF LACK OF PERSONAL JURISDICTION
-// AND FORUM NON CONVENIENS. PROCESS MAY BE SERVED ON EITHER PARTY IN
-// THE MANNER AUTHORIZED BY APPLICABLE LAW OR COURT RULE.
-// 
-// USE ONLY IN JAPAN. DO NOT USE IT IN OTHER COUNTRIES. IMPORTING THIS
-// SOFTWARE INTO OTHER COUNTRIES IS AT YOUR OWN RISK. SOME COUNTRIES
-// PROHIBIT ENCRYPTED COMMUNICATIONS. USING THIS SOFTWARE IN OTHER
-// COUNTRIES MIGHT BE RESTRICTED.
-// 
-// 
-// SOURCE CODE CONTRIBUTION
-// ------------------------
-// 
-// Your contribution to SoftEther VPN Project is much appreciated.
-// Please send patches to us through GitHub.
-// Read the SoftEther VPN Patch Acceptance Policy in advance:
-// http://www.softether.org/5-download/src/9.patch
-// 
-// 
-// DEAR SECURITY EXPERTS
-// ---------------------
-// 
-// If you find a bug or a security vulnerability please kindly inform us
-// about the problem immediately so that we can fix the security problem
-// to protect a lot of users around the world as soon as possible.
-// 
-// Our e-mail address for security reports is:
-// softether-vpn-security [at] softether.org
-// 
-// Please note that the above e-mail address is not a technical support
-// inquiry address. If you need technical assistance, please visit
-// http://www.softether.org/ and ask your question on the users forum.
-// 
-// Thank you for your cooperation.
 
 
 // Internat.c
@@ -170,22 +85,6 @@ BUF *UniStrToBin(wchar_t *str)
 	return ret;
 }
 
-// Generate a sequence of specified characters
-wchar_t *UniMakeCharArray(wchar_t c, UINT count)
-{
-	UINT i;
-	wchar_t *ret = Malloc(sizeof(wchar_t) * (count + 1));
-
-	for (i = 0;i < count;i++)
-	{
-		ret[i] = c;
-	}
-
-	ret[count] = 0;
-
-	return ret;
-}
-
 // Check whether the character is safe
 bool UniIsSafeChar(wchar_t c)
 {
@@ -205,26 +104,6 @@ bool UniIsSafeChar(wchar_t c)
 		}
 	}
 	return false;
-}
-
-// Convert the token list to a string list
-LIST *UniTokenListToList(UNI_TOKEN_LIST *t)
-{
-	UINT i;
-	LIST *o;
-	// Validate arguments
-	if (t == NULL)
-	{
-		return NULL;
-	}
-
-	o = NewListFast(NULL);
-	for (i = 0;i < t->NumTokens;i++)
-	{
-		Insert(o, UniCopyStr(t->Token[i]));
-	}
-
-	return o;
 }
 
 // Convert a string list to a token list
@@ -266,71 +145,6 @@ void UniFreeStrList(LIST *o)
 	}
 
 	ReleaseList(o);
-}
-
-// Convert the string list to a string
-BUF *UniStrListToStr(LIST *o)
-{
-	BUF *b;
-	UINT i;
-	wchar_t c;
-	// Validate arguments
-	if (o == NULL)
-	{
-		return NULL;
-	}
-	b = NewBuf();
-
-	for (i = 0;i < LIST_NUM(o);i++)
-	{
-		wchar_t *s = LIST_DATA(o, i);
-		WriteBuf(b, s, UniStrSize(s));
-	}
-
-	c = 0;
-	WriteBuf(b, &c, sizeof(c));
-
-	SeekBuf(b, 0, 0);
-
-	return b;
-}
-
-// Convert a (NULL delimited) string to list
-LIST *UniStrToStrList(wchar_t *str, UINT size)
-{
-	LIST *o;
-	wchar_t *tmp;
-	UINT tmp_size;
-	UINT i;
-	// Validate arguments
-	if (str == NULL)
-	{
-		return NULL;
-	}
-
-	o = NewListFast(NULL);
-
-	i = 0;
-	while (true)
-	{
-		if (i >= size)
-		{
-			break;
-		}
-		if (*str == 0)
-		{
-			break;
-		}
-
-		tmp_size = UniStrSize(str);
-		tmp = ZeroMalloc(tmp_size);
-		UniStrCpy(tmp, tmp_size, str);
-		Add(o, tmp);
-		str += UniStrLen(str) + 1;
-		i++;
-	}
-
-	return o;
 }
 
 // Normalize the line breaks
@@ -798,51 +612,6 @@ UINT UniStrWidth(wchar_t *str)
 	return ret;
 }
 
-// Display a dump of Unicode string
-void DumpUniStr(wchar_t *str)
-{
-	UINT i, len;
-	char *s;
-	// Validate arguments
-	if (str == NULL)
-	{
-		return;
-	}
-
-	s = CopyUniToStr(str);
-
-	Print("DumpUniStr: %s\n  ", s);
-
-	len = UniStrLen(str);
-	for (i = 0;i < len;i++)
-	{
-		Print("0x%04X ", str[i]);
-	}
-	Print("\n");
-
-	Free(s);
-}
-
-// Display the dump of the string
-void DumpStr(char *str)
-{
-	UINT i, len;
-	// Validate arguments
-	if (str == NULL)
-	{
-		return;
-	}
-
-	Print("DumpStr: %s\n  ", str);
-
-	len = StrLen(str);
-	for (i = 0;i < len;i++)
-	{
-		Print("0x%02X ", str[i]);
-	}
-	Print("\n");
-}
-
 // Convert string of 2 byte/character to wchar_t of 4 byte/character
 wchar_t *Utf16ToWide(USHORT *str)
 {
@@ -914,11 +683,11 @@ void InitInternational()
 	d = IconvWideToStrInternal();
 	if (d == (void *)-1)
 	{
-#ifdef	UNIX_MACOS
+#if defined (UNIX_MACOS) || defined (UNIX_LINUX_MUSL)
 		StrCpy(charset, sizeof(charset), "utf-8");
-#else	// UNIX_MACOS
+#else // defined (UNIX_MACOS) || defined (UNIX_LINUX_MUSL) 
 		StrCpy(charset, sizeof(charset), "EUCJP");
-#endif	// UNIX_MACOS
+#endif // defined (UNIX_MACOS) || defined (UNIX_LINUX_MUSL) 
 		d = IconvWideToStrInternal();
 		if (d == (void *)-1)
 		{
@@ -1245,12 +1014,6 @@ UNI_TOKEN_LIST *UniNullToken()
 	return ret;
 }
 
-// Empty Unicode token list (Alias)
-UNI_TOKEN_LIST *NullUniToken()
-{
-	return UniNullToken();
-}
-
 // Convert the token list to Unicode token list
 UNI_TOKEN_LIST *TokenListToUniTokenList(TOKEN_LIST *src)
 {
@@ -1465,81 +1228,6 @@ UINT64 UniToInt64(wchar_t *str)
 	return ToInt64(tmp);
 }
 
-// Convert a 64-bit integer to a Unicode string
-void UniToStr64(wchar_t *str, UINT64 value)
-{
-	char tmp[MAX_SIZE];
-	// Validate arguments
-	if (str == NULL)
-	{
-		return;
-	}
-
-	ToStr64(tmp, value);
-
-	StrToUni(str, 0, tmp);
-}
-
-// Convert an ANSI string to UTF
-UINT StrToUtf(char *utfstr, UINT size, char *str)
-{
-	char *tmp;
-	// Validate arguments
-	if (utfstr == NULL || str == NULL)
-	{
-		StrCpy(utfstr, size, "");
-		return 0;
-	}
-
-	tmp = CopyStrToUtf(str);
-
-	StrCpy(utfstr, size, tmp);
-
-	Free(tmp);
-
-	return StrLen(utfstr);
-}
-
-// Convert an UTF string to an ANSI string
-UINT UtfToStr(char *str, UINT size, char *utfstr)
-{
-	char *tmp;
-	// Validate arguments
-	if (str == NULL || utfstr == NULL)
-	{
-		StrCpy(str, size, "");
-		return 0;
-	}
-
-	tmp = CopyUtfToStr(utfstr);
-
-	StrCpy(str, size, tmp);
-
-	Free(tmp);
-
-	return StrLen(str);
-}
-
-// Convert the Unicode string to the UTF string
-UINT UniToUtf(char *utfstr, UINT size, wchar_t *unistr)
-{
-	char *tmp;
-	// Validate arguments
-	if (utfstr == NULL || unistr == NULL)
-	{
-		StrCpy(utfstr, size, "");
-		return 0;
-	}
-
-	tmp = CopyUniToStr(unistr);
-
-	StrCpy(utfstr, size, tmp);
-
-	Free(tmp);
-
-	return StrLen(utfstr);
-}
-
 // Convert the UTF string to a Unicode string
 UINT UtfToUni(wchar_t *unistr, UINT size, char *utfstr)
 {
@@ -1577,30 +1265,6 @@ wchar_t *CopyUtfToUni(char *utfstr)
 	size = CalcUtf8ToUni((BYTE *)utfstr, utfstr_len);
 	ret = ZeroMalloc(size + sizeof(wchar_t));
 	Utf8ToUni(ret, size, (BYTE *)utfstr, utfstr_len);
-
-	return ret;
-}
-
-// Copy the UTF8 string to the ANSI string
-char *CopyUtfToStr(char *utfstr)
-{
-	wchar_t *uni;
-	char *ret;
-	// Validate arguments
-	if (utfstr == NULL)
-	{
-		return NULL;
-	}
-
-	uni = CopyUtfToUni(utfstr);
-	if (uni == NULL)
-	{
-		return CopyStr("");
-	}
-
-	ret = CopyUniToStr(uni);
-
-	Free(uni);
 
 	return ret;
 }
@@ -1664,30 +1328,6 @@ char *CopyUniToUtf(wchar_t *unistr)
 	ret = ZeroMalloc(size + sizeof(char));
 
 	UniToUtf8((char *)ret, size, unistr);
-
-	return ret;
-}
-
-// Copy ANSI string to UTF8 string
-char *CopyStrToUtf(char *str)
-{
-	wchar_t *unistr;
-	char *ret;
-	// Validate arguments
-	if (str == NULL)
-	{
-		return NULL;
-	}
-
-	unistr = CopyStrToUni(str);
-	if (unistr == NULL)
-	{
-		return CopyStr("");
-	}
-
-	ret = CopyUniToUtf(unistr);
-
-	Free(unistr);
 
 	return ret;
 }
@@ -1761,120 +1401,6 @@ bool IsSafeUniChar(wchar_t c)
 		}
 	}
 	return false;
-}
-
-// Convert an UTF-8 string to an ANSI string
-UINT Utf8ToStr(char *str, UINT str_size, BYTE *u, UINT size)
-{
-	UINT ret, uni_size;
-	wchar_t *tmp;
-	// Validate arguments
-	if (u == NULL || str == NULL)
-	{
-		return 0;
-	}
-
-	// Convert to Unicode
-	uni_size = CalcUtf8ToUni(u, size);
-	if (uni_size == 0)
-	{
-		if (str_size >= 1)
-		{
-			StrCpy(str, 0, "");
-			return 0;
-		}
-	}
-	tmp = Malloc(uni_size);
-	Utf8ToUni(tmp, uni_size, u, size);
-
-	// Convert to ANSI
-	ret = UniToStr(str, str_size, tmp);
-	Free(tmp);
-
-	return ret;
-}
-
-// Get the size required when UTF-8 string is converted to ANSI string
-UINT CalcUtf8ToStr(BYTE *u, UINT size)
-{
-	UINT ret, uni_size;
-	wchar_t *tmp;
-	// Validate arguments
-	if (u == NULL)
-	{
-		return 0;
-	}
-
-	// Convert to Unicode
-	uni_size = CalcUtf8ToUni(u, size);
-	if (uni_size == 0)
-	{
-		return 0;
-	}
-	tmp = Malloc(uni_size);
-	Utf8ToUni(tmp, uni_size, u, size);
-
-	// Convert to ANSI
-	ret = CalcUniToStr(tmp);
-	Free(tmp);
-
-	return ret;
-}
-
-// Convert an ANSI string to UTF-8 string
-UINT StrToUtf8(BYTE *u, UINT size, char *str)
-{
-	UINT ret, uni_size;
-	wchar_t *tmp;
-	// Validate arguments
-	if (u == NULL || str == NULL)
-	{
-		return 0;
-	}
-
-	// Convert to Unicode
-	uni_size = CalcStrToUni(str);
-	if (uni_size == 0)
-	{
-		return 0;
-	}
-	tmp = Malloc(uni_size);
-	StrToUni(tmp, uni_size, str);
-
-	// Convert to UTF-8
-	ret = UniToUtf8(u, size, tmp);
-
-	Free(tmp);
-
-	return ret;
-}
-
-// Get the required buffer size to convert an ANSI string to an UTF-8 string
-UINT CalcStrToUtf8(char *str)
-{
-	UINT ret;
-	UINT uni_size;
-	wchar_t *tmp;
-	// Validate arguments
-	if (str == NULL)
-	{
-		return 0;
-	}
-
-	// Convert to Unicode
-	uni_size = CalcStrToUni(str);
-	if (uni_size == 0)
-	{
-		return 0;
-	}
-	tmp = Malloc(uni_size);
-	StrToUni(tmp, uni_size, str);
-
-	// Get the size as it was converted to UTF-8
-	ret = CalcUniToUtf8(tmp);
-	Free(tmp);
-
-	return ret;
 }
 
 // Convert Unicode string to ANSI string
@@ -2017,7 +1543,7 @@ UINT Utf8ToUni(wchar_t *s, UINT size, BYTE *u, UINT u_size)
 	while (true)
 	{
 		UINT type;
-		wchar_t c;
+		wchar_t c = 0;
 		BYTE c1, c2;
 
 		type = GetUtf8Type(u, u_size, i);
@@ -2041,8 +1567,6 @@ UINT Utf8ToUni(wchar_t *s, UINT size, BYTE *u, UINT u_size)
 			break;
 		}
 		i += type;
-
-		c = 0;
 
 		if (IsBigEndian())
 		{
@@ -2311,12 +1835,6 @@ UINT GetUniType(wchar_t c)
 	return 3;
 }
 
-// String replacing (case-insensitive)
-UINT UniReplaceStri(wchar_t *dst, UINT size, wchar_t *string, wchar_t *old_keyword, wchar_t *new_keyword)
-{
-	return UniReplaceStrEx(dst, size, string, old_keyword, new_keyword, false);
-}
-
 // String replacing (case-sensitive)
 UINT UniReplaceStr(wchar_t *dst, UINT size, wchar_t *string, wchar_t *old_keyword, wchar_t *new_keyword)
 {
@@ -2417,12 +1935,6 @@ UINT UniCalcReplaceStrEx(wchar_t *string, wchar_t *old_keyword, wchar_t *new_key
 UINT UniSearchStr(wchar_t *string, wchar_t *keyword, UINT start)
 {
 	return UniSearchStrEx(string, keyword, start, true);
-}
-
-// Search for a string (Don't distinguish between upper / lower case)
-UINT UniSearchStri(wchar_t *string, wchar_t *keyword, UINT start)
-{
-	return UniSearchStrEx(string, keyword, start, false);
 }
 
 // Return the position of the first found of the keyword in the string 
@@ -2574,82 +2086,171 @@ UNI_TOKEN_LIST *UnixUniParseToken(wchar_t *src, wchar_t *separator)
 	return ret;
 }
 
+// Get a standard token delimiter
+wchar_t *UniDefaultTokenSplitChars()
+{
+	return L" ,\t\r\n";
+}
+
+// Check whether the specified character is in the string
+bool UniIsCharInStr(wchar_t *str, wchar_t c)
+{
+	UINT i, len;
+	// Validate arguments
+	if (str == NULL)
+	{
+		return false;
+	}
+
+	len = UniStrLen(str);
+	for (i = 0;i < len;i++)
+	{
+		if (str[i] == c)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+// Cut out the token from the string (not ignore the blanks between delimiters)
+UNI_TOKEN_LIST *UniParseTokenWithNullStr(wchar_t *str, wchar_t *split_chars)
+{
+	LIST *o;
+	UINT i, len;
+	BUF *b;
+	wchar_t zero = 0;
+	UNI_TOKEN_LIST *t;
+	// Validate arguments
+	if (str == NULL)
+	{
+		return UniNullToken();
+	}
+	if (split_chars == NULL)
+	{
+		split_chars = UniDefaultTokenSplitChars();
+	}
+
+	b = NewBuf();
+	o = NewListFast(NULL);
+
+	len = UniStrLen(str);
+
+	for (i = 0;i < (len + 1);i++)
+	{
+		wchar_t c = str[i];
+		bool flag = UniIsCharInStr(split_chars, c);
+
+		if (c == L'\0')
+		{
+			flag = true;
+		}
+
+		if (flag == false)
+		{
+			WriteBuf(b, &c, sizeof(wchar_t));
+		}
+		else
+		{
+			WriteBuf(b, &zero, sizeof(wchar_t));
+
+			Insert(o, UniCopyStr((wchar_t *)b->Buf));
+			ClearBuf(b);
+		}
+	}
+
+	t = ZeroMalloc(sizeof(UNI_TOKEN_LIST));
+	t->NumTokens = LIST_NUM(o);
+	t->Token = ZeroMalloc(sizeof(wchar_t *) * t->NumTokens);
+
+	for (i = 0;i < t->NumTokens;i++)
+	{
+		t->Token[i] = LIST_DATA(o, i);
+	}
+
+	ReleaseList(o);
+	FreeBuf(b);
+
+	return t;
+}
+
+// Cut out the token from string (Ignore blanks between delimiters)
+UNI_TOKEN_LIST *UniParseTokenWithoutNullStr(wchar_t *str, wchar_t *split_chars)
+{
+	LIST *o;
+	UINT i, len;
+	bool last_flag;
+	BUF *b;
+	wchar_t zero = 0;
+	UNI_TOKEN_LIST *t;
+	// Validate arguments
+	if (str == NULL)
+	{
+		return UniNullToken();
+	}
+	if (split_chars == NULL)
+	{
+		split_chars = UniDefaultTokenSplitChars();
+	}
+
+	b = NewBuf();
+	o = NewListFast(NULL);
+
+	len = UniStrLen(str);
+	last_flag = false;
+
+	for (i = 0;i < (len + 1);i++)
+	{
+		wchar_t c = str[i];
+		bool flag = UniIsCharInStr(split_chars, c);
+
+		if (c == L'\0')
+		{
+			flag = true;
+		}
+
+		if (flag == false)
+		{
+			WriteBuf(b, &c, sizeof(wchar_t));
+		}
+		else
+		{
+			if (last_flag == false)
+			{
+				WriteBuf(b, &zero, sizeof(wchar_t));
+
+				if ((UniStrLen((wchar_t *)b->Buf)) != 0)
+				{
+					Insert(o, UniCopyStr((wchar_t *)b->Buf));
+				}
+				ClearBuf(b);
+			}
+		}
+
+		last_flag = flag;
+	}
+
+	t = ZeroMalloc(sizeof(UNI_TOKEN_LIST));
+	t->NumTokens = LIST_NUM(o);
+	t->Token = ZeroMalloc(sizeof(wchar_t *) * t->NumTokens);
+
+	for (i = 0;i < t->NumTokens;i++)
+	{
+		t->Token[i] = LIST_DATA(o, i);
+	}
+
+	ReleaseList(o);
+	FreeBuf(b);
+
+	return t;
+}
+
 // Parse the token
 UNI_TOKEN_LIST *UniParseToken(wchar_t *src, wchar_t *separator)
 {
-#ifdef	OS_WIN32
-	UNI_TOKEN_LIST *ret;
-	wchar_t *tmp;
-	wchar_t *str1, *str2;
-	UINT len, num;
-
-#ifdef	OS_UNIX
-	wchar_t *state = NULL;
-#endif	// OS_UNIX
-
-	// Validate arguments
-	if (src == NULL)
-	{
-		ret = ZeroMalloc(sizeof(UNI_TOKEN_LIST));
-		ret->Token = ZeroMalloc(0);
-		return ret;
-	}
-	if (separator == NULL)
-	{
-		separator = L" .\t\r\n";
-	}
-	len = UniStrLen(src);
-	str1 = Malloc((len + 1) * sizeof(wchar_t));
-	str2 = Malloc((len + 1) * sizeof(wchar_t));
-	UniStrCpy(str1, 0, src);
-	UniStrCpy(str2, 0, src);
-
-	Lock(token_lock);
-	{
-		tmp = wcstok(str1, separator
-#ifdef	OS_UNIX
-			, &state
-#endif	// OS_UNIX
-			);
-		num = 0;
-		while (tmp != NULL)
-		{
-			num++;
-			tmp = wcstok(NULL, separator
-#ifdef	OS_UNIX
-				, &state
-#endif	// OS_UNIX
-				);
-		}
-		ret = Malloc(sizeof(UNI_TOKEN_LIST));
-		ret->NumTokens = num;
-		ret->Token = (wchar_t **)Malloc(sizeof(wchar_t *) * num);
-		num = 0;
-		tmp = wcstok(str2, separator
-#ifdef	OS_UNIX
-			, &state
-#endif	// OS_UNIX
-			);
-		while (tmp != NULL)
-		{
-			ret->Token[num] = (wchar_t *)Malloc((UniStrLen(tmp) + 1) * sizeof(wchar_t));
-			UniStrCpy(ret->Token[num], 0, tmp);
-			num++;
-			tmp = wcstok(NULL, separator
-#ifdef	OS_UNIX
-				, &state
-#endif	// OS_UNIX
-				);
-		}
-	}
-	Unlock(token_lock);
-
-	Free(str1);
-	Free(str2);
-	return ret;
-#else	// OS_WIN32
-	return UnixUniParseToken(src, separator);
-#endif	// OS_WIN32
+	// 2020/7/20 remove strtok by dnobori
+	return UniParseTokenWithoutNullStr(src, separator);
 }
 
 // Get a line from standard input
@@ -2842,18 +2443,6 @@ void UniTrimLeft(wchar_t *str)
 	Free(buf);
 }
 
-// Convert an integer to a hexadecimal string (8-digit fixed)
-void UniToStrx8(wchar_t *str, UINT i)
-{
-	UniFormat(str, 0, L"0x%08x", i);
-}
-
-// Convert an integer to a hexadecimal string
-void UniToStrx(wchar_t *str, UINT i)
-{
-	UniFormat(str, 0, L"0x%02x", i);
-}
-
 // Convert a signed integer to a string
 void UniToStri(wchar_t *str, int i)
 {
@@ -2864,21 +2453,6 @@ void UniToStri(wchar_t *str, int i)
 void UniToStru(wchar_t *str, UINT i)
 {
 	UniFormat(str, 0, L"%u", i);
-}
-
-// Convert the string to signed integer
-int UniToInti(wchar_t *str)
-{
-	char tmp[128];
-	// Validate arguments
-	if (str == NULL)
-	{
-		return 0;
-	}
-
-	UniToStrForSingleChars(tmp, sizeof(tmp), str);
-
-	return ToInt(tmp);
 }
 
 // Convert a string to an integer
@@ -2928,78 +2502,79 @@ void UniToStrForSingleChars(char *dst, UINT dst_size, wchar_t *src)
 	}
 }
 
-// Format string replacement for 64-bit
-wchar_t *UniReplaceFormatStringFor64(wchar_t *fmt)
+// Get lines from a string
+UNI_TOKEN_LIST *UniGetLines(wchar_t *str)
 {
-	wchar_t *tmp;
-	wchar_t *ret;
-	UINT tmp_size;
+	UINT i, len;
+	BUF *b = NULL;
+	LIST *o;
+	UNI_TOKEN_LIST *ret;
 	// Validate arguments
-	if (fmt == NULL)
+	if (str == NULL)
 	{
-		return NULL;
+		return UniNullToken();
 	}
 
-	tmp_size = UniStrSize(fmt) * 2;
-	tmp = ZeroMalloc(tmp_size);
+	o = NewListFast(NULL);
 
-#ifdef	OS_WIN32
-	UniReplaceStrEx(tmp, tmp_size, fmt, L"%ll", L"%I64", false);
-#else	// OS_WIN32
-	UniReplaceStrEx(tmp, tmp_size, fmt, L"%I64", L"%ll", false);
+	len = UniStrLen(str);
 
-	if (1)
+	b = NewBuf();
+
+	for (i = 0;i < len;i++)
 	{
-		UINT i, len;
+		wchar_t c = str[i];
 		bool f = false;
-		len = UniStrLen(tmp);
-		for (i = 0;i < len;i++)
-		{
-			if (tmp[i] == L'%')
-			{
-				f = true;
-			}
 
-			if (f)
+		if (c == L'\r')
+		{
+			if (str[i + 1] == L'\n')
 			{
-				switch (tmp[i])
-				{
-				case L'c':
-				case L'C':
-				case L'd':
-				case L'i':
-				case L'o':
-				case L'u':
-				case L'x':
-				case L'X':
-				case L'e':
-				case L'E':
-				case L'f':
-				case L'g':
-				case L'G':
-				case L'n':
-				case L'p':
-				case L's':
-				case L'S':
-					if (tmp[i] == L's')
-					{
-						tmp[i] = L'S';
-					}
-					else if (tmp[i] == L'S')
-					{
-						tmp[i] = L's';
-					}
-					f = false;
-					break;
-				}
+				i++;
 			}
+			f = true;
+		}
+		else if (c == L'\n')
+		{
+			f = true;
+		}
+
+		if (f)
+		{
+			wchar_t zero = 0;
+			wchar_t *s;
+			WriteBuf(b, &zero, sizeof(wchar_t));
+
+			s = (wchar_t *)b->Buf;
+
+			Add(o, UniCopyStr(s));
+
+			ClearBuf(b);
+		}
+		else
+		{
+			WriteBuf(b, &c, sizeof(wchar_t));
 		}
 	}
 
-#endif	// OS_WIN32
+	if (true)
+	{
+		wchar_t zero = 0;
+		wchar_t *s;
+		WriteBuf(b, &zero, sizeof(wchar_t));
 
-	ret = CopyUniStr(tmp);
-	Free(tmp);
+		s = (wchar_t *)b->Buf;
+
+		Add(o, UniCopyStr(s));
+
+		ClearBuf(b);
+	}
+
+	FreeBuf(b);
+
+	ret = UniListToTokenList(o);
+
+	UniFreeStrList(o);
 
 	return ret;
 }
@@ -3346,22 +2921,6 @@ UINT UniStrCat(wchar_t *dst, UINT size, wchar_t *src)
 
 	return len1 + len2;
 }
-UINT UniStrCatLeft(wchar_t *dst, UINT size, wchar_t *src)
-{
-	wchar_t *s;
-	// Validate arguments
-	if (dst == NULL || src == NULL)
-	{
-		return 0;
-	}
-
-	s = UniCopyStr(dst);
-	UniStrCpy(dst, size, s);
-	UniStrCat(dst, size, src);
-	Free(s);
-
-	return UniStrLen(dst);
-}
 
 // String copy
 UINT UniStrCpy(wchar_t *dst, UINT size, wchar_t *src)
@@ -3406,49 +2965,12 @@ UINT UniStrCpy(wchar_t *dst, UINT size, wchar_t *src)
 	}
 	else
 	{
-		len = size / 2 - 1;
+		len = size / sizeof(wchar_t) - 1;
 		Copy(dst, src, len * sizeof(wchar_t));
 		dst[len] = 0;
 	}
 
 	return len;
-}
-
-// Check whether the character is within specified buffer size
-bool UniCheckStrSize(wchar_t *str, UINT size)
-{
-	// Validate arguments
-	if (str == NULL || size <= 1)
-	{
-		return false;
-	}
-
-	return UniCheckStrLen(str, size / sizeof(wchar_t) - 1);
-}
-
-// Check whether the number of characters is within specified length
-bool UniCheckStrLen(wchar_t *str, UINT len)
-{
-	UINT count = 0;
-	UINT i;
-	// Validate arguments
-	if (str == NULL)
-	{
-		return false;
-	}
-
-	for (i = 0;;i++)
-	{
-		if (str[i] == 0)
-		{
-			return true;
-		}
-		count++;
-		if (count > len)
-		{
-			return false;
-		}
-	}
 }
 
 // Get the buffer size needed to store the string
@@ -3486,7 +3008,3 @@ UINT UniStrLen(wchar_t *str)
 	return i;
 }
 
-
-// Developed by SoftEther VPN Project at University of Tsukuba in Japan.
-// Department of Computer Science has dozens of overly-enthusiastic geeks.
-// Join us: http://www.tsukuba.ac.jp/english/admission/

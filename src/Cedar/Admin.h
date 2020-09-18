@@ -1,90 +1,5 @@
-// SoftEther VPN Source Code
+// SoftEther VPN Source Code - Developer Edition Master Branch
 // Cedar Communication Module
-// 
-// SoftEther VPN Server, Client and Bridge are free software under GPLv2.
-// 
-// Copyright (c) 2012-2014 Daiyuu Nobori.
-// Copyright (c) 2012-2014 SoftEther VPN Project, University of Tsukuba, Japan.
-// Copyright (c) 2012-2014 SoftEther Corporation.
-// 
-// All Rights Reserved.
-// 
-// http://www.softether.org/
-// 
-// Author: Daiyuu Nobori
-// Comments: Tetsuo Sugiyama, Ph.D.
-// 
-// 
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License
-// version 2 as published by the Free Software Foundation.
-// 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU General Public License for more details.
-// 
-// You should have received a copy of the GNU General Public License version 2
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-// IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-// CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-// TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-// SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-// 
-// THE LICENSE AGREEMENT IS ATTACHED ON THE SOURCE-CODE PACKAGE
-// AS "LICENSE.TXT" FILE. READ THE TEXT FILE IN ADVANCE TO USE THE SOFTWARE.
-// 
-// 
-// THIS SOFTWARE IS DEVELOPED IN JAPAN, AND DISTRIBUTED FROM JAPAN,
-// UNDER JAPANESE LAWS. YOU MUST AGREE IN ADVANCE TO USE, COPY, MODIFY,
-// MERGE, PUBLISH, DISTRIBUTE, SUBLICENSE, AND/OR SELL COPIES OF THIS
-// SOFTWARE, THAT ANY JURIDICAL DISPUTES WHICH ARE CONCERNED TO THIS
-// SOFTWARE OR ITS CONTENTS, AGAINST US (SOFTETHER PROJECT, SOFTETHER
-// CORPORATION, DAIYUU NOBORI OR OTHER SUPPLIERS), OR ANY JURIDICAL
-// DISPUTES AGAINST US WHICH ARE CAUSED BY ANY KIND OF USING, COPYING,
-// MODIFYING, MERGING, PUBLISHING, DISTRIBUTING, SUBLICENSING, AND/OR
-// SELLING COPIES OF THIS SOFTWARE SHALL BE REGARDED AS BE CONSTRUED AND
-// CONTROLLED BY JAPANESE LAWS, AND YOU MUST FURTHER CONSENT TO
-// EXCLUSIVE JURISDICTION AND VENUE IN THE COURTS SITTING IN TOKYO,
-// JAPAN. YOU MUST WAIVE ALL DEFENSES OF LACK OF PERSONAL JURISDICTION
-// AND FORUM NON CONVENIENS. PROCESS MAY BE SERVED ON EITHER PARTY IN
-// THE MANNER AUTHORIZED BY APPLICABLE LAW OR COURT RULE.
-// 
-// USE ONLY IN JAPAN. DO NOT USE IT IN OTHER COUNTRIES. IMPORTING THIS
-// SOFTWARE INTO OTHER COUNTRIES IS AT YOUR OWN RISK. SOME COUNTRIES
-// PROHIBIT ENCRYPTED COMMUNICATIONS. USING THIS SOFTWARE IN OTHER
-// COUNTRIES MIGHT BE RESTRICTED.
-// 
-// 
-// SOURCE CODE CONTRIBUTION
-// ------------------------
-// 
-// Your contribution to SoftEther VPN Project is much appreciated.
-// Please send patches to us through GitHub.
-// Read the SoftEther VPN Patch Acceptance Policy in advance:
-// http://www.softether.org/5-download/src/9.patch
-// 
-// 
-// DEAR SECURITY EXPERTS
-// ---------------------
-// 
-// If you find a bug or a security vulnerability please kindly inform us
-// about the problem immediately so that we can fix the security problem
-// to protect a lot of users around the world as soon as possible.
-// 
-// Our e-mail address for security reports is:
-// softether-vpn-security [at] softether.org
-// 
-// Please note that the above e-mail address is not a technical support
-// inquiry address. If you need technical assistance, please visit
-// http://www.softether.org/ and ask your question on the users forum.
-// 
-// Thank you for your cooperation.
 
 
 // Admin.h
@@ -117,6 +32,8 @@ struct ADMIN
 	LIST *LogFileList;			// Accessible log file list
 	UINT ClientBuild;			// Build number of the client
 	RPC_WINVER ClientWinVer;	// Windows version of client
+	UINT MaxJsonRpcRecvSize;	// Max JSON-RPC Receive Size
+	char dummy1[MAX_HUBNAME_LEN + 1];	// hubname buffer (dummy)
 };
 
 // Test
@@ -151,7 +68,7 @@ struct RPC_SERVER_STATUS
 	UINT NumTcpConnectionsLocal;		// Number of Local TCP connections
 	UINT NumTcpConnectionsRemote;		// Number of remote TCP connections
 	UINT NumHubTotal;					// Total number of HUBs
-	UINT NumHubStandalone;				// Nymber of stand-alone HUB
+	UINT NumHubStandalone;				// Number of stand-alone HUB
 	UINT NumHubStatic;					// Number of static HUBs
 	UINT NumHubDynamic;					// Number of Dynamic HUBs
 	UINT NumSessionsTotal;				// Total number of sessions
@@ -188,6 +105,13 @@ struct RPC_LISTENER_LIST
 	bool *Errors;						// An error occurred
 };
 
+// List of ports
+struct RPC_PORTS
+{
+	UINT Num;							// Number of ports
+	UINT *Ports;						// Ports
+};
+
 // String *
 struct RPC_STR
 {
@@ -200,10 +124,19 @@ struct RPC_INT
 	UINT IntValue;						// Integer
 };
 
+// Proto options
+struct RPC_PROTO_OPTIONS
+{
+	char *Protocol;						// Protocol name
+	UINT Num;							// Number of options
+	PROTO_OPTION *Options;				// Options
+};
+
 // Set Password
 struct RPC_SET_PASSWORD
 {
-	UCHAR HashedPassword[SHA1_SIZE];	// Hashed password
+	UCHAR HashedPassword[SHA1_SIZE];	// Hashed password (for traditional RPC)
+	char PlainTextPassword[MAX_SIZE];	// Plaintext password (for JSON-RPC)
 };
 
 // Server farm configuration *
@@ -216,6 +149,7 @@ struct RPC_FARM
 	char ControllerName[MAX_HOST_NAME_LEN + 1];	// Controller name
 	UINT ControllerPort;				// Controller port
 	UCHAR MemberPassword[SHA1_SIZE];	// Member password
+	char MemberPasswordPlaintext[MAX_SIZE];	// Member password (plaintext)
 	UINT Weight;						// Performance ratio
 	bool ControllerOnly;				// Only controller function
 };
@@ -289,6 +223,7 @@ struct RPC_KEY_PAIR
 {
 	X *Cert;							// Certificate
 	K *Key;								// Secret key
+	UINT Flag1;							// Flag1
 };
 
 // HUB option
@@ -320,6 +255,7 @@ struct RPC_CREATE_HUB
 	char HubName[MAX_HUBNAME_LEN + 1];	// HUB Name
 	UCHAR HashedPassword[SHA1_SIZE];	// Administrative password
 	UCHAR SecurePassword[SHA1_SIZE];	// Administrator password
+	char AdminPasswordPlainText[MAX_SIZE];	// Password (plaintext)
 	bool Online;						// Online flag
 	RPC_HUB_OPTION HubOption;			// HUB options
 	UINT HubType;						// Type of HUB
@@ -637,6 +573,7 @@ struct RPC_ENUM_SESSION_ITEM
 	char RemoteHostname[MAX_HOST_NAME_LEN + 1];		// Remote server name
 	char Username[MAX_USERNAME_LEN + 1];			// User name
 	UINT Ip;										// IP address (IPv4)
+	IP ClientIP;									// IP address (IPv4 / IPv6)
 	char Hostname[MAX_HOST_NAME_LEN	+ 1];			// Host name
 	UINT MaxNumTcp;									// Maximum number of TCP connections
 	UINT CurrentNumTcp;								// Number of currentl TCP connections
@@ -650,6 +587,11 @@ struct RPC_ENUM_SESSION_ITEM
 	bool Client_MonitorMode;						// Client is monitoring mode
 	UINT VLanId;									// VLAN ID
 	UCHAR UniqueId[16];								// Unique ID
+	bool IsDormantEnabled;							// Is the dormant state enabled
+	bool IsDormant;									// Is in the dormant state
+	UINT64 LastCommDormant;							// Last comm interval in the dormant state
+	UINT64 CreatedTime;								// Creation date and time
+	UINT64 LastCommTime;							// Last communication date and time
 };
 
 // Disconnect the session
@@ -686,8 +628,9 @@ struct RPC_ENUM_IP_TABLE_ITEM
 {
 	UINT Key;										// Key
 	char SessionName[MAX_SESSION_NAME_LEN + 1];		// Session name
-	UINT Ip;										// IP address
+	UINT Ip;										// IPv4 address
 	IP IpV6;										// IPv6 address
+	IP IpAddress;									// IPv4 / IPv6 Address
 	bool DhcpAllocated;								// Assigned by the DHCP
 	UINT64 CreatedTime;								// Creation date and time
 	UINT64 UpdatedTime;								// Updating date
@@ -973,12 +916,15 @@ struct RPC_AZURE_STATUS
 	bool IsConnected;						// Whether it's connected
 };
 
+// Constants
+#define ADMIN_RPC_MAX_POST_SIZE_BY_SERVER_ADMIN		MAX_PACK_SIZE
+#define ADMIN_RPC_MAX_POST_SIZE_BY_HUB_ADMIN		(8 * 1024 * 1024)
+
 
 // Function prototype
 UINT AdminAccept(CONNECTION *c, PACK *p);
 void HashAdminPassword(void *hash, char *password);
 SESSION *AdminConnectMain(CEDAR *cedar, CLIENT_OPTION *o, char *hubname, void *hashed_password, UINT *err, char *client_name, void *hWnd, bool *empty_password);
-RPC *AdminConnect(CEDAR *cedar, CLIENT_OPTION *o, char *hubname, void *hashed_password, UINT *err);
 RPC *AdminConnectEx(CEDAR *cedar, CLIENT_OPTION *o, char *hubname, void *hashed_password, UINT *err, char *client_name);
 RPC *AdminConnectEx2(CEDAR *cedar, CLIENT_OPTION *o, char *hubname, void *hashed_password, UINT *err, char *client_name, void *hWnd);
 void AdminDisconnect(RPC *rpc);
@@ -998,6 +944,26 @@ BUF *DownloadFileFromServer(RPC *r, char *server_name, char *filepath, UINT tota
 bool CheckAdminSourceAddress(SOCK *sock, char *hubname);
 void SiEnumSessionMain(SERVER *s, RPC_ENUM_SESSION *t);
 bool SiIsEmptyPassword(void *hash_password);
+void JsonRpcProcPost(CONNECTION *c, SOCK *s, HTTP_HEADER *h, UINT post_data_size);
+void JsonRpcProcGet(CONNECTION *c, SOCK *s, HTTP_HEADER *h, char *url_target);
+void JsonRpcProcOptions(CONNECTION *c, SOCK *s, HTTP_HEADER *h, char *url_target);
+JSON_VALUE *JsonRpcProcRequestObject(ADMIN *admin, CONNECTION *c, SOCK *s, JSON_VALUE *json_req, char *method_name);
+JSON_VALUE *JsonRpcNewError(int code, wchar_t *message);
+JSON_VALUE *JsonRpcNewResponse(PACK *p);
+bool HttpParseBasicAuthHeader(HTTP_HEADER *h, char *username, UINT username_size, char *password, UINT password_size);
+ADMIN *JsonRpcAuthLogin(CEDAR *c, SOCK *sock, HTTP_HEADER *h);
+JSON_VALUE *QueryStringToJsonListValue(char *qs);
+JSON_VALUE *ConstructDummyJsonRpcRequest(char *method_name, JSON_VALUE *p);
+void AdminWebProcPost(CONNECTION *c, SOCK *s, HTTP_HEADER *h, UINT post_data_size, char *url_target);
+void AdminWebProcGet(CONNECTION *c, SOCK *s, HTTP_HEADER *h, char *url_target);
+bool AdminWebHandleFileRequest(ADMIN *a, CONNECTION *c, SOCK *s, HTTP_HEADER *h, char *url_src, char *query_string, char *virtual_root_dir, char *physical_root_dir);
+BUF *AdminWebProcessServerSideInclude(BUF *src_txt, char *filename, UINT depth);
+bool AdminWebSendBody(SOCK *s, UINT status_code, char *status_string, UCHAR *data, UINT data_size, char *content_type, char *add_header_name, char *add_header_value, HTTP_HEADER *request_headers);
+bool AdminWebSend404Error(SOCK *s, HTTP_HEADER *request_headers);
+bool AdminWebSend302Redirect(SOCK *s, char *url, char *query_string, HTTP_HEADER *request_headers);
+BUF *AdminWebTryFindAndReadFile(char *vroot, char *proot, char *url, char *ret_filename, UINT ret_filename_size, bool *is_index_html);
+BUF *AdminWebTryOneFile(char *filename, char *ret_filename, UINT ret_filename_size);
+bool AdminWebSendUnauthorized(SOCK *s, HTTP_HEADER *http_request_headers);
 
 UINT StTest(ADMIN *a, RPC_TEST *t);
 UINT StGetServerInfo(ADMIN *a, RPC_SERVER_INFO *t);
@@ -1006,6 +972,10 @@ UINT StCreateListener(ADMIN *a, RPC_LISTENER *t);
 UINT StEnumListener(ADMIN *a, RPC_LISTENER_LIST *t);
 UINT StDeleteListener(ADMIN *a, RPC_LISTENER *t);
 UINT StEnableListener(ADMIN *a, RPC_LISTENER *t);
+UINT StSetPortsUDP(ADMIN *a, RPC_PORTS *t);
+UINT StGetPortsUDP(ADMIN *a, RPC_PORTS *t);
+UINT StGetProtoOptions(ADMIN *a, RPC_PROTO_OPTIONS *t);
+UINT StSetProtoOptions(ADMIN *a, RPC_PROTO_OPTIONS *t);
 UINT StSetServerPassword(ADMIN *a, RPC_SET_PASSWORD *t);
 UINT StSetFarmSetting(ADMIN *a, RPC_FARM *t);
 UINT StGetFarmSetting(ADMIN *a, RPC_FARM *t);
@@ -1014,6 +984,7 @@ UINT StEnumFarmMember(ADMIN *a, RPC_ENUM_FARM *t);
 UINT StGetFarmConnectionStatus(ADMIN *a, RPC_FARM_CONNECTION_STATUS *t);
 UINT StSetServerCert(ADMIN *a, RPC_KEY_PAIR *t);
 UINT StGetServerCert(ADMIN *a, RPC_KEY_PAIR *t);
+UINT StGetServerCipherList(ADMIN *a, RPC_STR *t);
 UINT StGetServerCipher(ADMIN *a, RPC_STR *t);
 UINT StSetServerCipher(ADMIN *a, RPC_STR *t);
 UINT StCreateHub(ADMIN *a, RPC_CREATE_HUB *t);
@@ -1149,6 +1120,10 @@ UINT ScCreateListener(RPC *r, RPC_LISTENER *t);
 UINT ScEnumListener(RPC *r, RPC_LISTENER_LIST *t);
 UINT ScDeleteListener(RPC *r, RPC_LISTENER *t);
 UINT ScEnableListener(RPC *r, RPC_LISTENER *t);
+UINT ScSetPortsUDP(RPC *r, RPC_PORTS *t);
+UINT ScGetPortsUDP(RPC *r, RPC_PORTS *t);
+UINT ScSetProtoOptions(RPC *r, RPC_PROTO_OPTIONS *t);
+UINT ScGetProtoOptions(RPC *r, RPC_PROTO_OPTIONS *t);
 UINT ScSetServerPassword(RPC *r, RPC_SET_PASSWORD *t);
 UINT ScSetFarmSetting(RPC *r, RPC_FARM *t);
 UINT ScGetFarmSetting(RPC *r, RPC_FARM *t);
@@ -1157,6 +1132,7 @@ UINT ScEnumFarmMember(RPC *r, RPC_ENUM_FARM *t);
 UINT ScGetFarmConnectionStatus(RPC *r, RPC_FARM_CONNECTION_STATUS *t);
 UINT ScSetServerCert(RPC *r, RPC_KEY_PAIR *t);
 UINT ScGetServerCert(RPC *r, RPC_KEY_PAIR *t);
+UINT ScGetServerCipherList(RPC *r, RPC_STR *t);
 UINT ScGetServerCipher(RPC *r, RPC_STR *t);
 UINT ScSetServerCipher(RPC *r, RPC_STR *t);
 UINT ScCreateHub(RPC *r, RPC_CREATE_HUB *t);
@@ -1298,9 +1274,15 @@ void OutRpcListener(PACK *p, RPC_LISTENER *t);
 void InRpcListenerList(RPC_LISTENER_LIST *t, PACK *p);
 void OutRpcListenerList(PACK *p, RPC_LISTENER_LIST *t);
 void FreeRpcListenerList(RPC_LISTENER_LIST *t);
+void InRpcPorts(RPC_PORTS *t, PACK *p);
+void OutRpcPorts(PACK *p, RPC_PORTS *t);
+void FreeRpcPorts(RPC_PORTS *t);
 void InRpcStr(RPC_STR *t, PACK *p);
 void OutRpcStr(PACK *p, RPC_STR *t);
 void FreeRpcStr(RPC_STR *t);
+void InRpcProtoOptions(RPC_PROTO_OPTIONS *t, PACK *p);
+void OutRpcProtoOptions(PACK *p, RPC_PROTO_OPTIONS *t);
+void FreeRpcProtoOptions(RPC_PROTO_OPTIONS *t);
 void InRpcSetPassword(RPC_SET_PASSWORD *t, PACK *p);
 void OutRpcSetPassword(PACK *p, RPC_SET_PASSWORD *t);
 void InRpcFarm(RPC_FARM *t, PACK *p);
@@ -1331,7 +1313,7 @@ void InRpcDeleteHub(RPC_DELETE_HUB *t, PACK *p);
 void OutRpcDeleteHub(PACK *p, RPC_DELETE_HUB *t);
 void InRpcEnumConnection(RPC_ENUM_CONNECTION *t, PACK *p);
 void OutRpcEnumConnection(PACK *p, RPC_ENUM_CONNECTION *t);
-void FreeRpcEnumConnetion(RPC_ENUM_CONNECTION *t);
+void FreeRpcEnumConnection(RPC_ENUM_CONNECTION *t);
 void InRpcDisconnectConnection(RPC_DISCONNECT_CONNECTION *t, PACK *p);
 void OutRpcDisconnectConnection(PACK *p, RPC_DISCONNECT_CONNECTION *t);
 void InRpcConnectionInfo(RPC_CONNECTION_INFO *t, PACK *p);
@@ -1371,7 +1353,7 @@ void OutRpcAccess(PACK *p, ACCESS *a);
 void InRpcEnumAccessList(RPC_ENUM_ACCESS_LIST *a, PACK *p);
 void OutRpcEnumAccessList(PACK *p, RPC_ENUM_ACCESS_LIST *a);
 void FreeRpcEnumAccessList(RPC_ENUM_ACCESS_LIST *a);
-void *InRpcAuthData(PACK *p, UINT *authtype);
+void *InRpcAuthData(PACK *p, UINT *authtype, char *username);
 void OutRpcAuthData(PACK *p, void *authdata, UINT authtype);
 void FreeRpcAuthData(void *authdata, UINT authtype);
 void InRpcSetUser(RPC_SET_USER *t, PACK *p);
@@ -1508,7 +1490,3 @@ void OutRpcInternetSetting(PACK *p, INTERNET_SETTING *t);
 #endif	// ADMIN_H
 
 
-
-// Developed by SoftEther VPN Project at University of Tsukuba in Japan.
-// Department of Computer Science has dozens of overly-enthusiastic geeks.
-// Join us: http://www.tsukuba.ac.jp/english/admission/

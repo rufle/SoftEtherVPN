@@ -1,90 +1,5 @@
-// SoftEther VPN Source Code
+// SoftEther VPN Source Code - Developer Edition Master Branch
 // Cedar Communication Module
-// 
-// SoftEther VPN Server, Client and Bridge are free software under GPLv2.
-// 
-// Copyright (c) 2012-2014 Daiyuu Nobori.
-// Copyright (c) 2012-2014 SoftEther VPN Project, University of Tsukuba, Japan.
-// Copyright (c) 2012-2014 SoftEther Corporation.
-// 
-// All Rights Reserved.
-// 
-// http://www.softether.org/
-// 
-// Author: Daiyuu Nobori
-// Comments: Tetsuo Sugiyama, Ph.D.
-// 
-// 
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License
-// version 2 as published by the Free Software Foundation.
-// 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU General Public License for more details.
-// 
-// You should have received a copy of the GNU General Public License version 2
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-// IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-// CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-// TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-// SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-// 
-// THE LICENSE AGREEMENT IS ATTACHED ON THE SOURCE-CODE PACKAGE
-// AS "LICENSE.TXT" FILE. READ THE TEXT FILE IN ADVANCE TO USE THE SOFTWARE.
-// 
-// 
-// THIS SOFTWARE IS DEVELOPED IN JAPAN, AND DISTRIBUTED FROM JAPAN,
-// UNDER JAPANESE LAWS. YOU MUST AGREE IN ADVANCE TO USE, COPY, MODIFY,
-// MERGE, PUBLISH, DISTRIBUTE, SUBLICENSE, AND/OR SELL COPIES OF THIS
-// SOFTWARE, THAT ANY JURIDICAL DISPUTES WHICH ARE CONCERNED TO THIS
-// SOFTWARE OR ITS CONTENTS, AGAINST US (SOFTETHER PROJECT, SOFTETHER
-// CORPORATION, DAIYUU NOBORI OR OTHER SUPPLIERS), OR ANY JURIDICAL
-// DISPUTES AGAINST US WHICH ARE CAUSED BY ANY KIND OF USING, COPYING,
-// MODIFYING, MERGING, PUBLISHING, DISTRIBUTING, SUBLICENSING, AND/OR
-// SELLING COPIES OF THIS SOFTWARE SHALL BE REGARDED AS BE CONSTRUED AND
-// CONTROLLED BY JAPANESE LAWS, AND YOU MUST FURTHER CONSENT TO
-// EXCLUSIVE JURISDICTION AND VENUE IN THE COURTS SITTING IN TOKYO,
-// JAPAN. YOU MUST WAIVE ALL DEFENSES OF LACK OF PERSONAL JURISDICTION
-// AND FORUM NON CONVENIENS. PROCESS MAY BE SERVED ON EITHER PARTY IN
-// THE MANNER AUTHORIZED BY APPLICABLE LAW OR COURT RULE.
-// 
-// USE ONLY IN JAPAN. DO NOT USE IT IN OTHER COUNTRIES. IMPORTING THIS
-// SOFTWARE INTO OTHER COUNTRIES IS AT YOUR OWN RISK. SOME COUNTRIES
-// PROHIBIT ENCRYPTED COMMUNICATIONS. USING THIS SOFTWARE IN OTHER
-// COUNTRIES MIGHT BE RESTRICTED.
-// 
-// 
-// SOURCE CODE CONTRIBUTION
-// ------------------------
-// 
-// Your contribution to SoftEther VPN Project is much appreciated.
-// Please send patches to us through GitHub.
-// Read the SoftEther VPN Patch Acceptance Policy in advance:
-// http://www.softether.org/5-download/src/9.patch
-// 
-// 
-// DEAR SECURITY EXPERTS
-// ---------------------
-// 
-// If you find a bug or a security vulnerability please kindly inform us
-// about the problem immediately so that we can fix the security problem
-// to protect a lot of users around the world as soon as possible.
-// 
-// Our e-mail address for security reports is:
-// softether-vpn-security [at] softether.org
-// 
-// Please note that the above e-mail address is not a technical support
-// inquiry address. If you need technical assistance, please visit
-// http://www.softether.org/ and ask your question on the users forum.
-// 
-// Thank you for your cooperation.
 
 
 // Session.h
@@ -146,7 +61,12 @@ struct PACKET_ADAPTER
 	PA_PUTPACKET *PutPacket;
 	PA_FREE *Free;
 	void *Param;
+	UINT Id;
 };
+
+// Packet Adapter IDs
+#define	PACKET_ADAPTER_ID_VLAN_WIN32		1
+
 
 // Session structure
 struct SESSION
@@ -167,6 +87,7 @@ struct SESSION
 	bool InProcMode;				// In-process mode
 	THREAD *Thread;					// Management thread
 	CONNECTION *Connection;			// Connection
+	char ClientIP[64];				// Client IP
 	CLIENT_OPTION *ClientOption;	// Client connection options
 	CLIENT_AUTH *ClientAuth;		// Client authentication data
 	volatile bool Halt;				// Halting flag
@@ -190,7 +111,6 @@ struct SESSION
 	UINT64 NextConnectionTime;		// Time to put next additional connection
 	IP ServerIP;					// IP address of the server
 	bool ClientModeAndUseVLan;		// Use a virtual LAN card in client mode
-	bool UseSSLDataEncryption;		// Use SSL data encryption
 	LOCK *TrafficLock;				// Traffic data lock
 	LINK *Link;						// A reference to the link object
 	SNAT *SecureNAT;				// A reference to the SecureNAT object
@@ -207,8 +127,11 @@ struct SESSION
 	UCHAR IpcMacAddress[6];			// MAC address for IPC
 	UCHAR Padding[2];
 
+	IP ServerIP_CacheForNextConnect;	// Server IP, cached for next connect
+
 	UINT64 CreatedTime;				// Creation date and time
 	UINT64 LastCommTime;			// Last communication date and time
+	UINT64 LastCommTimeForDormant;	// Last communication date and time (for dormant)
 	TRAFFIC *Traffic;				// Traffic data
 	TRAFFIC *OldTraffic;			// Old traffic data
 	UINT64 TotalSendSize;			// Total transmitted data size
@@ -225,7 +148,6 @@ struct SESSION
 	char SessionKeyStr[64];			// Session key string
 	UINT MaxConnection;				// Maximum number of concurrent TCP connections
 	bool UseEncrypt;				// Use encrypted communication
-	bool UseFastRC4;				// Use high speed RC4 encryption
 	bool UseCompress;				// Use data compression
 	bool HalfConnection;			// Half connection mode
 	bool QoS;						// VoIP / QoS
@@ -235,18 +157,23 @@ struct SESSION
 	UINT NumDisconnected;			// Number of socket disconnection
 	bool NoReconnectToSession;		// Disable to reconnect to the session
 	char UnderlayProtocol[64];		// Physical communication protocol
+	char ProtocolDetails[256];		// Protocol details
+	/* !!! Do not correct the spelling to keep the backward protocol compatibility !!!  */
 	UINT64 FirstConnectionEstablisiedTime;	// Connection completion time of the first connection
 	UINT64 CurrentConnectionEstablishTime;	// Completion time of this connection
-	UINT NumConnectionsEatablished;	// Number of connections established so far
+	UINT NumConnectionsEstablished;	// Number of connections established so far
 	UINT AdjustMss;					// MSS adjustment value
+	bool IsVPNClientAndVLAN_Win32;	// Is the VPN Client session with a VLAN card (Win32)
 
 	bool IsRUDPSession;				// Whether R-UDP session
 	UINT RUdpMss;					// The value of the MSS should be applied while the R-UDP is used
 	bool EnableBulkOnRUDP;			// Allow the bulk transfer in the R-UDP session
+	UINT BulkOnRUDPVersion;			// RUDP Bulk version
 	bool EnableHMacOnBulkOfRUDP;	// Use the HMAC to sign the bulk transfer of R-UDP session
 	bool EnableUdpRecovery;			// Enable the R-UDP recovery
 
 	bool UseUdpAcceleration;		// Use of UDP acceleration mode
+	UINT UdpAccelerationVersion;	// UDP acceleration version
 	bool UseHMacOnUdpAcceleration;	// Use the HMAC in the UDP acceleration mode
 	UDP_ACCEL *UdpAccel;			// UDP acceleration
 	bool IsUsingUdpAcceleration;	// Flag of whether the UDP acceleration is used
@@ -278,7 +205,7 @@ struct SESSION
 	LIST *DelayedPacketList;		// Delayed packet list
 	UINT Flag1;
 
-	USER *NumLoginIncrementUserObject;	// User objects to increment the nymber of logins
+	USER *NumLoginIncrementUserObject;	// User objects to increment the number of logins
 	HUB *NumLoginIncrementHubObject;	// Virtual HUB object to increment the number of logins
 	UINT64 NumLoginIncrementTick;		// Time to perform increment a number of log
 
@@ -286,13 +213,21 @@ struct SESSION
 	char FirstTimeHttpRedirectUrl[128];	// URL for redirection only the first time
 	UINT FirstTimeHttpAccessCheckIp;	// IP address for access checking
 
-	// To examine the maximum number of alowed logging target packets per minute
+	UCHAR BulkSendKey[RUDP_BULK_KEY_SIZE_MAX];	// RUDP Bulk Send Key
+	UINT BulkSendKeySize;						// RUDP Bulk Send Key size
+	UCHAR BulkRecvKey[RUDP_BULK_KEY_SIZE_MAX];	// RUDP Bulk Recv Key
+	UINT BulkRecvKeySize;						// RUDP Bulk Recv Key size
+
+	// To examine the maximum number of allowed logging target packets per minute
 	UINT64 MaxLoggedPacketsPerMinuteStartTick;	// Inspection start time
 	UINT CurrentNumPackets;				// Current number of packets
 
 	// Measures for D-Link bug
 	UINT64 LastDLinkSTPPacketSendTick;	// Last D-Link STP packet transmission time
 	UCHAR LastDLinkSTPPacketDataHash[MD5_SIZE];	// Last D-Link STP packet hash
+
+	SHARED_BUFFER *IpcSessionSharedBuffer;	// A shared buffer between IPC and Session
+	IPC_SESSION_SHARED_BUFFER_DATA *IpcSessionShared;	// Shared data between IPC and Session
 };
 
 // Password dialog
@@ -374,7 +309,7 @@ SESSION *NewRpcSession(CEDAR *cedar, CLIENT_OPTION *option);
 SESSION *NewRpcSessionEx(CEDAR *cedar, CLIENT_OPTION *option, UINT *err, char *client_str);
 SESSION *NewRpcSessionEx2(CEDAR *cedar, CLIENT_OPTION *option, UINT *err, char *client_str, void *hWnd);
 SESSION *NewServerSession(CEDAR *cedar, CONNECTION *c, HUB *h, char *username, POLICY *policy);
-SESSION *NewServerSessionEx(CEDAR *cedar, CONNECTION *c, HUB *h, char *username, POLICY *policy, bool inproc_mode);
+SESSION *NewServerSessionEx(CEDAR *cedar, CONNECTION *c, HUB *h, char *username, POLICY *policy, bool inproc_mode, UCHAR *ipc_mac_address);
 void ClientThread(THREAD *t, void *param);
 void ReleaseSession(SESSION *s);
 void CleanupSession(SESSION *s);
@@ -382,15 +317,13 @@ void StopSession(SESSION *s);
 void StopSessionEx(SESSION *s, bool no_wait);
 bool SessionConnect(SESSION *s);
 bool ClientConnect(CONNECTION *c);
-int CompareSession(void *p1, void *p2);
 PACKET_ADAPTER *NewPacketAdapter(PA_INIT *init, PA_GETCANCEL *getcancel, PA_GETNEXTPACKET *getnext,
 								 PA_PUTPACKET *put, PA_FREE *free);
 void FreePacketAdapter(PACKET_ADAPTER *pa);
 void SessionMain(SESSION *s);
 void NewSessionKey(CEDAR *cedar, UCHAR *session_key, UINT *session_key_32);
 SESSION *GetSessionFromKey(CEDAR *cedar, UCHAR *session_key);
-SESSION *GetSessionFromKey32(CEDAR *cedar, UINT key32);
-void DebugPrintSessionKey(UCHAR *session_key);
+bool IsIpcMacAddress(UCHAR *mac);
 void ClientAdditionalConnectChance(SESSION *s);
 void SessionAdditionalConnect(SESSION *s);
 void ClientAdditionalThread(THREAD *t, void *param);
@@ -403,7 +336,6 @@ LIST *NewCancelList();
 void ReleaseCancelList(LIST *o);
 void AddCancelList(LIST *o, CANCEL *c);
 void CancelList(LIST *o);
-bool CompareNodeInfo(NODE_INFO *a, NODE_INFO *b);
 bool IsPriorityHighestPacketForQoS(void *data, UINT size);
 UINT GetNextDelayedPacketTickDiff(SESSION *s);
 
@@ -411,7 +343,3 @@ UINT GetNextDelayedPacketTickDiff(SESSION *s);
 
 
 
-
-// Developed by SoftEther VPN Project at University of Tsukuba in Japan.
-// Department of Computer Science has dozens of overly-enthusiastic geeks.
-// Join us: http://www.tsukuba.ac.jp/english/admission/

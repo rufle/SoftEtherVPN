@@ -1,90 +1,5 @@
-// SoftEther VPN Source Code
+// SoftEther VPN Source Code - Developer Edition Master Branch
 // Cedar Communication Module
-// 
-// SoftEther VPN Server, Client and Bridge are free software under GPLv2.
-// 
-// Copyright (c) 2012-2014 Daiyuu Nobori.
-// Copyright (c) 2012-2014 SoftEther VPN Project, University of Tsukuba, Japan.
-// Copyright (c) 2012-2014 SoftEther Corporation.
-// 
-// All Rights Reserved.
-// 
-// http://www.softether.org/
-// 
-// Author: Daiyuu Nobori
-// Comments: Tetsuo Sugiyama, Ph.D.
-// 
-// 
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License
-// version 2 as published by the Free Software Foundation.
-// 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU General Public License for more details.
-// 
-// You should have received a copy of the GNU General Public License version 2
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-// IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-// CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-// TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-// SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-// 
-// THE LICENSE AGREEMENT IS ATTACHED ON THE SOURCE-CODE PACKAGE
-// AS "LICENSE.TXT" FILE. READ THE TEXT FILE IN ADVANCE TO USE THE SOFTWARE.
-// 
-// 
-// THIS SOFTWARE IS DEVELOPED IN JAPAN, AND DISTRIBUTED FROM JAPAN,
-// UNDER JAPANESE LAWS. YOU MUST AGREE IN ADVANCE TO USE, COPY, MODIFY,
-// MERGE, PUBLISH, DISTRIBUTE, SUBLICENSE, AND/OR SELL COPIES OF THIS
-// SOFTWARE, THAT ANY JURIDICAL DISPUTES WHICH ARE CONCERNED TO THIS
-// SOFTWARE OR ITS CONTENTS, AGAINST US (SOFTETHER PROJECT, SOFTETHER
-// CORPORATION, DAIYUU NOBORI OR OTHER SUPPLIERS), OR ANY JURIDICAL
-// DISPUTES AGAINST US WHICH ARE CAUSED BY ANY KIND OF USING, COPYING,
-// MODIFYING, MERGING, PUBLISHING, DISTRIBUTING, SUBLICENSING, AND/OR
-// SELLING COPIES OF THIS SOFTWARE SHALL BE REGARDED AS BE CONSTRUED AND
-// CONTROLLED BY JAPANESE LAWS, AND YOU MUST FURTHER CONSENT TO
-// EXCLUSIVE JURISDICTION AND VENUE IN THE COURTS SITTING IN TOKYO,
-// JAPAN. YOU MUST WAIVE ALL DEFENSES OF LACK OF PERSONAL JURISDICTION
-// AND FORUM NON CONVENIENS. PROCESS MAY BE SERVED ON EITHER PARTY IN
-// THE MANNER AUTHORIZED BY APPLICABLE LAW OR COURT RULE.
-// 
-// USE ONLY IN JAPAN. DO NOT USE IT IN OTHER COUNTRIES. IMPORTING THIS
-// SOFTWARE INTO OTHER COUNTRIES IS AT YOUR OWN RISK. SOME COUNTRIES
-// PROHIBIT ENCRYPTED COMMUNICATIONS. USING THIS SOFTWARE IN OTHER
-// COUNTRIES MIGHT BE RESTRICTED.
-// 
-// 
-// SOURCE CODE CONTRIBUTION
-// ------------------------
-// 
-// Your contribution to SoftEther VPN Project is much appreciated.
-// Please send patches to us through GitHub.
-// Read the SoftEther VPN Patch Acceptance Policy in advance:
-// http://www.softether.org/5-download/src/9.patch
-// 
-// 
-// DEAR SECURITY EXPERTS
-// ---------------------
-// 
-// If you find a bug or a security vulnerability please kindly inform us
-// about the problem immediately so that we can fix the security problem
-// to protect a lot of users around the world as soon as possible.
-// 
-// Our e-mail address for security reports is:
-// softether-vpn-security [at] softether.org
-// 
-// Please note that the above e-mail address is not a technical support
-// inquiry address. If you need technical assistance, please visit
-// http://www.softether.org/ and ask your question on the users forum.
-// 
-// Thank you for your cooperation.
 
 
 // Connection.c
@@ -638,26 +553,16 @@ void WriteSendFifo(SESSION *s, TCPSOCK *ts, void *data, UINT size)
 		return;
 	}
 
-	if (s->UseFastRC4)
-	{
-		Encrypt(ts->SendKey, data, data, size);
-	}
-
 	WriteFifo(ts->SendFifo, data, size);
 }
 
-// Write data to the reception FIFO (automatic deccyption)
+// Write data to the reception FIFO (automatic decryption)
 void WriteRecvFifo(SESSION *s, TCPSOCK *ts, void *data, UINT size)
 {
 	// Validate arguments
 	if (s == NULL || ts == NULL || data == NULL)
 	{
 		return;
-	}
-
-	if (s->UseFastRC4)
-	{
-		Encrypt(ts->RecvKey, data, data, size);
 	}
 
 	WriteFifo(ts->RecvFifo, data, size);
@@ -667,14 +572,14 @@ void WriteRecvFifo(SESSION *s, TCPSOCK *ts, void *data, UINT size)
 UINT TcpSockRecv(SESSION *s, TCPSOCK *ts, void *data, UINT size)
 {
 	// Receive
-	return Recv(ts->Sock, data, size, s->UseSSLDataEncryption);
+	return Recv(ts->Sock, data, size, s->UseEncrypt);
 }
 
 // TCP socket send
 UINT TcpSockSend(SESSION *s, TCPSOCK *ts, void *data, UINT size)
 {
 	// Transmission
-	return Send(ts->Sock, data, size, s->UseSSLDataEncryption);
+	return Send(ts->Sock, data, size, s->UseEncrypt);
 }
 
 // Send the data as UDP packet
@@ -722,36 +627,32 @@ void SendDataWithUDP(SOCK *s, CONNECTION *c)
 		WriteBuf(b, dummy_buf, sizeof(dummy_buf));
 
 		// Pack the packets in transmission queue
-		LockQueue(c->SendBlocks);
+		while (true)
 		{
-			while (true)
+			BLOCK *block;
+
+			if (b->Size > UDP_BUF_SIZE)
 			{
-				BLOCK *block;
-
-				if (b->Size > UDP_BUF_SIZE)
-				{
-					break;
-				}
-				block = GetNext(c->SendBlocks);
-				if (block == NULL)
-				{
-					break;
-				}
-
-				if (block->Size != 0)
-				{
-					WriteBufInt(b, block->Size);
-					WriteBuf(b, block->Buf, block->Size);
-
-					c->Session->TotalSendSize += (UINT64)block->SizeofData;
-					c->Session->TotalSendSizeReal += (UINT64)block->Size;
-				}
-
-				FreeBlock(block);
 				break;
 			}
+			block = GetNext(c->SendBlocks);
+			if (block == NULL)
+			{
+				break;
+			}
+
+			if (block->Size != 0)
+			{
+				WriteBufInt(b, block->Size);
+				WriteBuf(b, block->Buf, block->Size);
+
+				c->Session->TotalSendSize += (UINT64)block->SizeofData;
+				c->Session->TotalSendSizeReal += (UINT64)block->Size;
+			}
+
+			FreeBlock(block);
+			break;
 		}
-		UnlockQueue(c->SendBlocks);
 
 		// Write sequence number and session key
 		sign = (char *)(((UCHAR *)b->Buf));
@@ -875,7 +776,7 @@ void PutUDPPacketData(CONNECTION *c, void *data, UINT size)
 					block = NewBlock(tmp, size, 0);
 
 					// Insert Block
-					InsertReveicedBlockToQueue(c, block);
+					InsertReceivedBlockToQueue(c, block, false);
 				}
 			}
 
@@ -892,7 +793,7 @@ void PutUDPPacketData(CONNECTION *c, void *data, UINT size)
 }
 
 // Add a block to the receive queue
-void InsertReveicedBlockToQueue(CONNECTION *c, BLOCK *block)
+void InsertReceivedBlockToQueue(CONNECTION *c, BLOCK *block, bool no_lock)
 {
 	SESSION *s;
 	// Validate arguments
@@ -909,11 +810,24 @@ void InsertReveicedBlockToQueue(CONNECTION *c, BLOCK *block)
 		s->TotalRecvSize += block->Size;
 	}
 
-	LockQueue(c->ReceivedBlocks);
+	if (no_lock == false)
+	{
+		LockQueue(c->ReceivedBlocks);
+	}
+
+	if (c->ReceivedBlocks->num_item < MAX_STORED_QUEUE_NUM)
 	{
 		InsertQueue(c->ReceivedBlocks, block);
 	}
-	UnlockQueue(c->ReceivedBlocks);
+	else
+	{
+		FreeBlock(block);
+	}
+
+	if (no_lock == false)
+	{
+		UnlockQueue(c->ReceivedBlocks);
+	}
 }
 
 // Generate the interval to the next Keep-Alive packet
@@ -991,17 +905,16 @@ void SendKeepAlive(CONNECTION *c, TCPSOCK *ts)
 }
 
 // Transmission of block
-void ConnectionSend(CONNECTION *c)
+void ConnectionSend(CONNECTION *c, UINT64 now)
 {
 	UINT i, num;
-	UINT64 now;
 	UINT min_count;
 	UINT64 max_recv_tick;
 	TCPSOCK **tcpsocks;
 	UINT size;
 	SESSION *s;
 	HUB *hub = NULL;
-	bool use_qos;
+	bool use_qos = false;
 	// Validate arguments
 	if (c == NULL)
 	{
@@ -1009,14 +922,12 @@ void ConnectionSend(CONNECTION *c)
 	}
 
 	s = c->Session;
-	use_qos = s->QoS;
 
 	if (s != NULL)
 	{
 		hub = s->Hub;
+		use_qos = s->QoS;
 	}
-
-	now = Tick64();
 
 	// Protocol
 	if (c->Protocol == CONNECTION_TCP)
@@ -1027,6 +938,8 @@ void ConnectionSend(CONNECTION *c)
 		TCPSOCK *ts_hp;
 		UINT num_available;
 		bool is_rudp = false;
+		UINT tcp_queue_size = 0;
+		int tcp_queue_size_diff = 0;
 		LockList(tcp->TcpSockList);
 		{
 			num = LIST_NUM(tcp->TcpSockList);
@@ -1053,12 +966,12 @@ void ConnectionSend(CONNECTION *c)
 			for (i = 0;i < num;i++)
 			{
 				TCPSOCK *tcpsock = tcpsocks[i];
-				if (tcpsock->Sock->Connected && tcpsock->Sock->AsyncMode &&
+				if (s != NULL && tcpsock->Sock->Connected && tcpsock->Sock->AsyncMode &&
 					IS_SEND_TCP_SOCK(tcpsock))
 				{
 					// Processing of KeepAlive
 					if (now >= tcpsock->NextKeepAliveTime || tcpsock->NextKeepAliveTime == 0 ||
-						(s != NULL && s->UseUdpAcceleration && s->UdpAccel != NULL && s->UdpAccel->MyPortByNatTServerChanged))
+						(s->UseUdpAcceleration && s->UdpAccel != NULL && s->UdpAccel->MyPortByNatTServerChanged))
 					{
 						// Send the KeepAlive
 						SendKeepAlive(c, tcpsock);
@@ -1122,7 +1035,15 @@ void ConnectionSend(CONNECTION *c)
 					}
 				}
 			}
+
+			tcp_queue_size += tcpsock->SendFifo->size;
 		}
+
+		tcp_queue_size_diff = ((int)tcp_queue_size) - ((int)c->LastTcpQueueSize);
+
+		CedarAddCurrentTcpQueueSize(c->Cedar, tcp_queue_size_diff);
+
+		c->LastTcpQueueSize = tcp_queue_size;
 
 		if (ts_hp == NULL)
 		{
@@ -1144,7 +1065,7 @@ void ConnectionSend(CONNECTION *c)
 			UINT j;
 			QUEUE *q;
 
-			if (s->UdpAccel != NULL)
+			if (s != NULL && s->UdpAccel != NULL)
 			{
 				UdpAccelSetTick(s->UdpAccel, now);
 			}
@@ -1162,13 +1083,15 @@ void ConnectionSend(CONNECTION *c)
 					tss = ts;
 				}
 				// I reserve the data to send on the selected socket ts
-				LockQueue(c->SendBlocks);
 				if (q->num_item != 0)
 				{
 					UINT num_data;
 					BLOCK *b;
+					UINT size_quota_v1 = MAX_SEND_SOCKET_QUEUE_SIZE / s->MaxConnection;
+					UINT size_quota_v2 = MIN_SEND_SOCKET_QUEUE_SIZE;
+					UINT size_quota = MAX(size_quota_v1, size_quota_v2);
 
-					if (tss->SendFifo->size >= MAX((MAX_SEND_SOCKET_QUEUE_SIZE / s->MaxConnection), MIN_SEND_SOCKET_QUEUE_SIZE))
+					if (tss->SendFifo->size >= size_quota)
 					{
 						// The size of the socket send queue is exceeded
 						// Unable to send
@@ -1237,6 +1160,8 @@ void ConnectionSend(CONNECTION *c)
 										s->TotalSendSizeReal += b->Size;
 
 										c->CurrentSendQueueSize -= b->Size;
+
+										Free(new_buf);
 									}
 
 									FreeBlock(b);
@@ -1323,7 +1248,6 @@ void ConnectionSend(CONNECTION *c)
 						}
 					}
 				}
-				UnlockQueue(c->SendBlocks);
 			}
 		}
 
@@ -1407,7 +1331,7 @@ SEND_START:
 							PROBE_STR("TcpSockSend All Completed");
 						}
 						// Updated the last communication date and time
-						c->Session->LastCommTime = now;
+						UPDATE_LAST_COMM_TIME(c->Session->LastCommTime, now);
 
 						goto SEND_START;
 					}
@@ -1456,56 +1380,46 @@ SEND_START:
 		// SecureNAT session
 		SNAT *snat = s->SecureNAT;
 		VH *v = snat->Nat->Virtual;
+		BLOCK *block;
+		UINT num_packet = 0;
 
-		LockQueue(c->SendBlocks);
+		if (hub != NULL)
 		{
-			BLOCK *block;
-			UINT num_packet = 0;
-
-			if (hub != NULL)
-			{
-				NatSetHubOption(v, hub->Option);
-			}
-
-			while (block = GetNext(c->SendBlocks))
-			{
-				num_packet++;
-				c->CurrentSendQueueSize -= block->Size;
-				VirtualPutPacket(v, block->Buf, block->Size);
-				Free(block);
-			}
-
-			if (num_packet != 0)
-			{
-				VirtualPutPacket(v, NULL, 0);
-			}
+			NatSetHubOption(v, hub->Option);
 		}
-		UnlockQueue(c->SendBlocks);
+
+		while (block = GetNext(c->SendBlocks))
+		{
+			num_packet++;
+			c->CurrentSendQueueSize -= block->Size;
+			VirtualPutPacket(v, block->Buf, block->Size);
+			Free(block);
+		}
+
+		if (num_packet != 0)
+		{
+			VirtualPutPacket(v, NULL, 0);
+		}
 	}
 	else if (c->Protocol == CONNECTION_HUB_LAYER3)
 	{
 		// Layer-3 session
 		L3IF *f = s->L3If;
+		BLOCK *block;
+		UINT num_packet = 0;
 
-		LockQueue(c->SendBlocks);
+		while (block = GetNext(c->SendBlocks))
 		{
-			BLOCK *block;
-			UINT num_packet = 0;
-
-			while (block = GetNext(c->SendBlocks))
-			{
-				num_packet++;
-				c->CurrentSendQueueSize -= block->Size;
-				L3PutPacket(f, block->Buf, block->Size);
-				Free(block);
-			}
-
-			if (num_packet != 0)
-			{
-				L3PutPacket(f, NULL, 0);
-			}
+			num_packet++;
+			c->CurrentSendQueueSize -= block->Size;
+			L3PutPacket(f, block->Buf, block->Size);
+			Free(block);
 		}
-		UnlockQueue(c->SendBlocks);
+
+		if (num_packet != 0)
+		{
+			L3PutPacket(f, NULL, 0);
+		}
 	}
 	else if (c->Protocol == CONNECTION_HUB_LINK_SERVER)
 	{
@@ -1514,30 +1428,35 @@ SEND_START:
 
 		if (k != NULL)
 		{
-			LockQueue(c->SendBlocks);
+			UINT num_blocks = 0;
+			LockQueue(k->SendPacketQueue);
 			{
-				UINT num_blocks = 0;
-				LockQueue(k->SendPacketQueue);
-				{
-					BLOCK *block;
+				BLOCK *block;
 
-					// Transfer the packet queue to the client thread
-					while (block = GetNext(c->SendBlocks))
+				// Transfer the packet queue to the client thread
+				while (block = GetNext(c->SendBlocks))
+				{
+					c->CurrentSendQueueSize -= block->Size;
+
+					if (k->SendPacketQueue->num_item >= MAX_STORED_QUEUE_NUM)
+					{
+						FreeBlock(block);
+					}
+					else
 					{
 						num_blocks++;
-						c->CurrentSendQueueSize -= block->Size;
+						k->CurrentSendPacketQueueSize += block->Size;
 						InsertQueue(k->SendPacketQueue, block);
 					}
 				}
-				UnlockQueue(k->SendPacketQueue);
-
-				if (num_blocks != 0)
-				{
-					// Issue of cancellation
-					Cancel(k->ClientSession->Cancel1);
-				}
 			}
-			UnlockQueue(c->SendBlocks);
+			UnlockQueue(k->SendPacketQueue);
+
+			if (num_blocks != 0)
+			{
+				// Issue of cancellation
+				Cancel(k->ClientSession->Cancel1);
+			}
 		}
 	}
 	else if (c->Protocol == CONNECTION_HUB_BRIDGE)
@@ -1549,54 +1468,50 @@ SEND_START:
 		{
 			if (b->Active)
 			{
-				LockQueue(c->SendBlocks);
+				BLOCK *block;
+				UINT num_packet = c->SendBlocks->num_item; // Packet count
+
+				if (num_packet != 0)
 				{
-					BLOCK *block;
-					UINT num_packet = c->SendBlocks->num_item; // Packet count
+					// Packet data array
+					void **datas = MallocFast(sizeof(void *) * num_packet);
+					UINT *sizes = MallocFast(sizeof(UINT) * num_packet);
+					UINT i;
 
-					if (num_packet != 0)
+					i = 0;
+					while (block = GetNext(c->SendBlocks))
 					{
-						// Packet data array
-						void **datas = MallocFast(sizeof(void *) * num_packet);
-						UINT *sizes = MallocFast(sizeof(UINT *) * num_packet);
-						UINT i;
-
-						i = 0;
-						while (block = GetNext(c->SendBlocks))
+						if (hub != NULL && hub->Option != NULL && hub->Option->DisableUdpFilterForLocalBridgeNic == false &&
+							b->Eth != NULL && IsDhcpPacketForSpecificMac(block->Buf, block->Size, b->Eth->MacAddress))
 						{
-							if (hub != NULL && hub->Option != NULL && hub->Option->DisableUdpFilterForLocalBridgeNic == false &&
-								b->Eth != NULL && IsDhcpPacketForSpecificMac(block->Buf, block->Size, b->Eth->MacAddress))
+							// DHCP Packet is filtered
+							datas[i] = NULL;
+							sizes[i] = 0;
+
+							Free(block->Buf);
+						}
+						else
+						{
+							datas[i] = block->Buf;
+							sizes[i] = block->Size;
+
+							if (block->Size > 1514)
 							{
-								// DHCP Packet is filtered
-								datas[i] = NULL;
-								sizes[i] = 0;
-
-								Free(block->Buf);
+								NormalizeEthMtu(b, c, block->Size);
 							}
-							else
-							{
-								datas[i] = block->Buf;
-								sizes[i] = block->Size;
-
-								if (block->Size > 1514)
-								{
-									NormalizeEthMtu(b, c, block->Size);
-								}
-							}
-
-							c->CurrentSendQueueSize -= block->Size;
-							Free(block);
-							i++;
 						}
 
-						// Write the packet
-						EthPutPackets(b->Eth, num_packet, datas, sizes);
-
-						Free(datas);
-						Free(sizes);
+						c->CurrentSendQueueSize -= block->Size;
+						Free(block);
+						i++;
 					}
+
+					// Write the packet
+					EthPutPackets(b->Eth, num_packet, datas, sizes);
+
+					Free(datas);
+					Free(sizes);
 				}
-				UnlockQueue(c->SendBlocks);
 			}
 		}
 	}
@@ -1611,10 +1526,10 @@ void ConnectionReceive(CONNECTION *c, CANCEL *c1, CANCEL *c2)
 	TCPSOCK **tcpsocks;
 	UCHAR *buf;
 	UINT size;
-	UINT64 now;
 	UINT time;
 	UINT num_delayed = 0;
 	bool no_spinlock_for_delay = false;
+	UINT64 now = Tick64();
 	HUB *hub = NULL;
 	// Validate arguments
 	if (c == NULL)
@@ -1636,8 +1551,6 @@ void ConnectionReceive(CONNECTION *c, CANCEL *c1, CANCEL *c2)
 		no_spinlock_for_delay = hub->Option->NoSpinLockForPacketDelay;
 	}
 
-	now = Tick64();
-
 	if (c->RecvBuf == NULL)
 	{
 		c->RecvBuf = Malloc(RECV_BUF_SIZE);
@@ -1650,6 +1563,8 @@ void ConnectionReceive(CONNECTION *c, CANCEL *c1, CANCEL *c2)
 		// TCP
 		TCP *tcp = c->Tcp;
 		UINT next_delay_packet_diff = 0;
+		UINT current_recv_fifo_size = 0;
+		int recv_fifo_size_middle_update = 0;
 
 		// Disconnect if disconnection interval is specified
 		if (s->ServerMode == false)
@@ -1763,6 +1678,8 @@ void ConnectionReceive(CONNECTION *c, CANCEL *c1, CANCEL *c2)
 			}
 		}
 
+		now = Tick64();
+
 		PROBE_STR("ConnectionReceive: Select 1");
 
 		if (s->UseUdpAcceleration && s->UdpAccel != NULL)
@@ -1778,6 +1695,7 @@ void ConnectionReceive(CONNECTION *c, CANCEL *c1, CANCEL *c2)
 
 			while (true)
 			{
+				UINT current_packet_index = 0;
 				BLOCK *b = GetNext(s->UdpAccel->RecvBlockQueue);
 
 				if (b == NULL)
@@ -1792,8 +1710,27 @@ void ConnectionReceive(CONNECTION *c, CANCEL *c1, CANCEL *c2)
 				}
 				else
 				{
-					// Add the data block to queue
-					InsertReveicedBlockToQueue(c, b);
+					if (CedarGetQueueBudgetBalance(c->Cedar) == 0)
+					{
+						FreeBlock(b);
+					}
+					else
+					{
+						// Add the data block to queue
+						InsertReceivedBlockToQueue(c, b, true);
+
+						if ((current_packet_index % 32) == 0)
+						{
+							UINT current_recv_block_num = c->ReceivedBlocks->num_item;
+							int diff = (int)current_recv_block_num - (int)c->LastRecvBlocksNum;
+
+							CedarAddQueueBudget(c->Cedar, diff);
+
+							c->LastRecvBlocksNum = current_recv_block_num;
+						}
+
+						current_packet_index++;
+					}
 				}
 			}
 		}
@@ -1824,6 +1761,7 @@ void ConnectionReceive(CONNECTION *c, CANCEL *c1, CANCEL *c2)
 					// R-UDP bulk transfer data reception
 					if (t != NULL && IsTubeConnected(t))
 					{
+						UINT current_packet_index = 0;
 						while (true)
 						{
 							TUBEDATA *d = TubeRecvAsync(t);
@@ -1855,15 +1793,34 @@ void ConnectionReceive(CONNECTION *c, CANCEL *c1, CANCEL *c2)
 							}
 							else
 							{
-								// Add the data block to queue
-								InsertReveicedBlockToQueue(c, block);
+								if (CedarGetQueueBudgetBalance(c->Cedar) == 0)
+								{
+									FreeBlock(block);
+								}
+								else
+								{
+									// Add the data block to queue
+									InsertReceivedBlockToQueue(c, block, true);
+
+									if ((current_packet_index % 32) == 0)
+									{
+										UINT current_recv_block_num = c->ReceivedBlocks->num_item;
+										int diff = (int)current_recv_block_num - (int)c->LastRecvBlocksNum;
+
+										CedarAddQueueBudget(c->Cedar, diff);
+
+										c->LastRecvBlocksNum = current_recv_block_num;
+									}
+
+									current_packet_index++;
+								}
 							}
 
 							FreeTubeData(d);
 
-							ts->LastCommTime = now;
-							ts->LastRecvTime = now;
-							c->Session->LastCommTime = now;
+							UPDATE_LAST_COMM_TIME(ts->LastCommTime, now);
+							UPDATE_LAST_COMM_TIME(ts->LastRecvTime, now);
+							UPDATE_LAST_COMM_TIME(c->Session->LastCommTime, now);
 						}
 					}
 				}
@@ -1872,6 +1829,8 @@ void ConnectionReceive(CONNECTION *c, CANCEL *c1, CANCEL *c2)
 			if (c->IsInProc)
 			{
 				TUBEDATA *d;
+				UINT current_packet_index = 0;
+
 				// Socket for in-process connection
 				if (IsTubeConnected(sock->RecvTube) == false)
 				{
@@ -1899,17 +1858,38 @@ void ConnectionReceive(CONNECTION *c, CANCEL *c1, CANCEL *c2)
 					}
 					else
 					{
-						// Add the data block to queue
-						InsertReveicedBlockToQueue(c, block);
+						if (CedarGetQueueBudgetBalance(c->Cedar) == 0)
+						{
+							FreeBlock(block);
+						}
+						else
+						{
+							// Add the data block to queue
+							InsertReceivedBlockToQueue(c, block, true);
+
+							if ((current_packet_index % 32) == 0)
+							{
+								UINT current_recv_block_num = c->ReceivedBlocks->num_item;
+								int diff = (int)current_recv_block_num - (int)c->LastRecvBlocksNum;
+
+								CedarAddQueueBudget(c->Cedar, diff);
+
+								c->LastRecvBlocksNum = current_recv_block_num;
+							}
+
+							current_packet_index++;
+						}
 					}
 
 					FreeTubeData(d);
 				}
 
-				c->Session->LastCommTime = now;
+				UPDATE_LAST_COMM_TIME(c->Session->LastCommTime, now);
 			}
 			else
 			{
+				UINT current_fifo_budget = 0;
+				UINT current_packet_index = 0;
 				// A normal socket (Not in-process)
 				if (ts->WantSize == 0)
 				{
@@ -1917,10 +1897,28 @@ void ConnectionReceive(CONNECTION *c, CANCEL *c1, CANCEL *c2)
 					ts->WantSize = sizeof(UINT);
 				}
 
+				now = Tick64();
+
 RECV_START:
+				current_fifo_budget = CedarGetFifoBudgetBalance(c->Cedar);
 				// Receive
-				size = TcpSockRecv(s, ts, buf, RECV_BUF_SIZE);
-/*
+				if (ts->RecvFifo->size < current_fifo_budget)
+				{
+					UINT recv_buf_size = current_fifo_budget - ts->RecvFifo->size;
+
+					recv_buf_size = MIN(recv_buf_size, RECV_BUF_SIZE);
+
+					size = TcpSockRecv(s, ts, buf, recv_buf_size);
+				}
+				else
+				{
+					size = SOCK_LATER;
+
+					UPDATE_LAST_COMM_TIME(c->Session->LastCommTime, now);
+					UPDATE_LAST_COMM_TIME(ts->LastCommTime, now);
+				}
+
+				/*
 				// Experiment
 				if (c->ServerMode)
 				{
@@ -1967,21 +1965,33 @@ DISCONNECT_THIS_TCP:
 				}
 				else
 				{
+					UINT budget_balance = CedarGetFifoBudgetBalance(c->Cedar);
+					UINT fifo_size_limit = budget_balance;
+
+					if (fifo_size_limit > MAX_BUFFERING_PACKET_SIZE)
+					{
+						fifo_size_limit = MAX_BUFFERING_PACKET_SIZE;
+					}
+
 					// Update the last communication time
-					ts->LastCommTime = now;
-					c->Session->LastCommTime = now;
-					ts->LastRecvTime = now;
+					UPDATE_LAST_COMM_TIME(c->Session->LastCommTime, now);
+					UPDATE_LAST_COMM_TIME(ts->LastRecvTime, now);
+
+					CedarAddFifoBudget(c->Cedar, (int)size);
+					recv_fifo_size_middle_update += (int)size;
 
 					// Write the received data into the FIFO
 					PROBE_DATA2("WriteRecvFifo", buf, size);
 					WriteRecvFifo(s, ts, buf, size);
 
 					// Stop receiving  when the receive buffer is full
-					if (ts->RecvFifo->size < MAX_SEND_SOCKET_QUEUE_SIZE)
+					if (ts->RecvFifo->size < fifo_size_limit)
 					{
 						goto RECV_START;
 					}
 				}
+
+				current_recv_fifo_size += FifoSize(ts->RecvFifo);
 
 				// process the data written to FIFO
 				while (ts->RecvFifo->size >= ts->WantSize)
@@ -2067,6 +2077,9 @@ DISCONNECT_THIS_TCP:
 						ReadFifo(ts->RecvFifo, NULL, ts->NextBlockSize);
 						block = NewBlock(data, ts->NextBlockSize, s->UseCompress ? -1 : 0);
 
+						UPDATE_LAST_COMM_TIME(c->Session->LastCommTime, now);
+						UPDATE_LAST_COMM_TIME(ts->LastCommTime, now);
+
 						if (block->Size > MAX_PACKET_SIZE)
 						{
 							// Packet size exceeded
@@ -2074,8 +2087,27 @@ DISCONNECT_THIS_TCP:
 						}
 						else
 						{
-							// Add the data block to queue
-							InsertReveicedBlockToQueue(c, block);
+							if (CedarGetQueueBudgetBalance(c->Cedar) == 0)
+							{
+								FreeBlock(block);
+							}
+							else
+							{
+								// Add the data block to queue
+								InsertReceivedBlockToQueue(c, block, true);
+
+								if ((current_packet_index % 32) == 0)
+								{
+									UINT current_recv_block_num = c->ReceivedBlocks->num_item;
+									int diff = (int)current_recv_block_num - (int)c->LastRecvBlocksNum;
+
+									CedarAddQueueBudget(c->Cedar, diff);
+
+									c->LastRecvBlocksNum = current_recv_block_num;
+								}
+
+								current_packet_index++;
+							}
 						}
 
 						if (ts->CurrentPacketNum >= ts->NextBlockNum)
@@ -2105,6 +2137,9 @@ DISCONNECT_THIS_TCP:
 						}
 						ts->NextBlockSize = MIN(sz, MAX_KEEPALIVE_SIZE);
 						ReadFifo(ts->RecvFifo, NULL, sizeof(UINT));
+
+						UPDATE_LAST_COMM_TIME(c->Session->LastCommTime, now);
+						UPDATE_LAST_COMM_TIME(ts->LastCommTime, now);
 
 						s->TotalRecvSize += sizeof(UINT);
 						s->TotalRecvSizeReal += sizeof(UINT);
@@ -2148,6 +2183,9 @@ DISCONNECT_THIS_TCP:
 						PROBE_DATA2("ReadFifo 4", NULL, 0);
 						ReadFifo(ts->RecvFifo, NULL, sz);
 
+						UPDATE_LAST_COMM_TIME(c->Session->LastCommTime, now);
+						UPDATE_LAST_COMM_TIME(ts->LastCommTime, now);
+
 						s->TotalRecvSize += sz;
 						s->TotalRecvSizeReal += sz;
 
@@ -2155,7 +2193,31 @@ DISCONNECT_THIS_TCP:
 						break;
 					}
 				}
+
+				ShrinkFifoMemory(ts->RecvFifo);
+				//printf("Fifo: %u\n", ts->RecvFifo->memsize);
 			}
+		}
+
+		if (true)
+		{
+			int diff;
+
+			diff = (int)current_recv_fifo_size - (int)c->LastRecvFifoTotalSize;
+
+			CedarAddFifoBudget(c->Cedar, (diff - recv_fifo_size_middle_update));
+
+			c->LastRecvFifoTotalSize = current_recv_fifo_size;
+		}
+
+		if (true)
+		{
+			UINT current_recv_block_num = c->ReceivedBlocks->num_item;
+			int diff = (int)current_recv_block_num - (int)c->LastRecvBlocksNum;
+
+			CedarAddQueueBudget(c->Cedar, diff);
+
+			c->LastRecvBlocksNum = current_recv_block_num;
 		}
 
 		Free(tcpsocks);
@@ -2301,7 +2363,7 @@ DISCONNECT_THIS_TCP:
 			else
 			{
 				// Add the data block to queue
-				InsertReveicedBlockToQueue(c, block);
+				InsertReceivedBlockToQueue(c, block, true);
 			}
 			num++;
 			if (num >= MAX_SEND_SOCKET_QUEUE_NUM)
@@ -2382,7 +2444,7 @@ DISCONNECT_THIS_TCP:
 			}
 			else
 			{
-				InsertReveicedBlockToQueue(c, block);
+				InsertReceivedBlockToQueue(c, block, true);
 			}
 
 			num++;
@@ -2422,7 +2484,9 @@ DISCONNECT_THIS_TCP:
 
 			if ((b->LastNumDeviceCheck + BRIDGE_NUM_DEVICE_CHECK_SPAN) <= Tick64())
 			{
+#ifdef	OS_WIN32
 				check_device_num = true;
+#endif	// OS_WIN32
 				b->LastNumDeviceCheck = Tick64();
 			}
 
@@ -2497,7 +2561,7 @@ DISCONNECT_THIS_TCP:
 						}
 						else
 						{
-							InsertReveicedBlockToQueue(c, block);
+							InsertReceivedBlockToQueue(c, block, true);
 						}
 						num++;
 						if (num >= MAX_SEND_SOCKET_QUEUE_NUM)
@@ -2512,7 +2576,7 @@ DISCONNECT_THIS_TCP:
 		else
 		{
 			ETH *e;
-			// Bridge is stopped cureently
+			// Bridge is stopped currently
 			Select(NULL, SELECT_TIME, c1, NULL);
 
 			if (b->LastBridgeTry == 0 || (b->LastBridgeTry + BRIDGE_TRY_SPAN) <= Tick64())
@@ -2620,12 +2684,16 @@ BLOCK *NewBlock(void *data, UINT size, int compress)
 
 	b = MallocFast(sizeof(BLOCK));
 
+	b->RawFlagRetUdpAccel = 0;
+
+	b->IsFlooding = false;
+
 	b->PriorityQoS = b->Ttl = b->Param1 = 0;
 
 	if (compress == 0)
 	{
 		// Uncompressed
-		b->Compressed = FALSE;
+		b->Compressed = false;
 		b->Buf = data;
 		b->Size = size;
 		b->SizeofData = size;
@@ -2635,7 +2703,7 @@ BLOCK *NewBlock(void *data, UINT size, int compress)
 		UINT max_size;
 
 		// Compressed
-		b->Compressed = TRUE;
+		b->Compressed = true;
 		max_size = CalcCompress(size);
 		b->Buf = MallocFast(max_size);
 		b->Size = Compress(b->Buf, max_size, data, size);
@@ -2649,7 +2717,7 @@ BLOCK *NewBlock(void *data, UINT size, int compress)
 		// Expand
 		UINT max_size;
 
-		b->Compressed = FALSE;
+		b->Compressed = false;
 		max_size = MAX_PACKET_SIZE;
 		b->Buf = MallocFast(max_size);
 		b->Size = Uncompress(b->Buf, max_size, data, size);
@@ -2685,34 +2753,6 @@ TCPSOCK *NewTcpSock(SOCK *s)
 	SetTimeout(s, TIMEOUT_INFINITE);
 
 	return ts;
-}
-
-// Set a encryption key for the TCP socket
-void InitTcpSockRc4Key(TCPSOCK *ts, bool server_mode)
-{
-	RC4_KEY_PAIR *pair;
-	CRYPT *c1, *c2;
-	// Validate arguments
-	if (ts == NULL)
-	{
-		return;
-	}
-
-	pair = &ts->Rc4KeyPair;
-
-	c1 = NewCrypt(pair->ClientToServerKey, sizeof(pair->ClientToServerKey));
-	c2 = NewCrypt(pair->ServerToClientKey, sizeof(pair->ServerToClientKey));
-
-	if (server_mode)
-	{
-		ts->RecvKey = c1;
-		ts->SendKey = c2;
-	}
-	else
-	{
-		ts->SendKey = c1;
-		ts->RecvKey = c2;
-	}
 }
 
 // Release of TCP socket
@@ -2853,7 +2893,7 @@ UINT GetMachineRand()
 	Zero(pcname, sizeof(pcname));
 	GetMachineName(pcname, sizeof(pcname));
 
-	HashSha1(hash, pcname, StrLen(pcname));
+	Sha1(hash, pcname, StrLen(pcname));
 
 	return READ_UINT(hash);
 }
@@ -2865,21 +2905,8 @@ void ConnectionAccept(CONNECTION *c)
 	X *x;
 	K *k;
 	char tmp[128];
-	UCHAR openssl_check_buf[2];
-	char *error_details = NULL;
-	SERVER *server;
-	UCHAR *peek_buf = NULL;
-	UINT peek_buf_size = 1500;
-	char sni[128] = {0};
-	bool native1 = false;	// Non-SNI flag
-	bool native2 = false;	// Non-TLS flag
-	bool native3 = false;	// SSLv2 flag
-	bool no_native = false;
-	UINT peek_size = 0;
 	UINT initial_timeout = CONNECTING_TIMEOUT;
-	bool no_peek_log = false;
 	UCHAR ctoken_hash[SHA1_SIZE];
-	bool no_write_ctoken_log = false;
 
 	// Validate arguments
 	if (c == NULL)
@@ -2889,13 +2916,7 @@ void ConnectionAccept(CONNECTION *c)
 
 	Zero(ctoken_hash, sizeof(ctoken_hash));
 
-	peek_buf = ZeroMalloc(peek_buf_size);
-
-	Debug("ConnectionAccept()\n");
-
-	server = c->Cedar->Server;
-
-	// get a socket
+	// Get a socket
 	s = c->FirstSock;
 	AddRef(s->ref);
 
@@ -2909,37 +2930,18 @@ void ConnectionAccept(CONNECTION *c)
 	initial_timeout += GetMachineRand() % (CONNECTING_TIMEOUT / 2);
 	SetTimeout(s, initial_timeout);
 
-
-	// Peek whether OpenSSL packet
-	if (s->IsReverseAcceptedSocket == false)
+	// Handle third-party protocols
+	if (s->IsReverseAcceptedSocket == false && s->Type == SOCK_TCP)
 	{
-		if (s->Type == SOCK_TCP && (c->Cedar != NULL && c->Cedar->Server != NULL && c->Cedar->Server->DisableOpenVPNServer == false))
+		if (c->Cedar != NULL && c->Cedar->Server != NULL)
 		{
-			if (Peek(s, openssl_check_buf, sizeof(openssl_check_buf)) == sizeof(openssl_check_buf))
+			PROTO *proto = c->Cedar->Server->Proto;
+			if (proto && ProtoHandleConnection(proto, s, NULL) == true)
 			{
-				if (OvsCheckTcpRecvBufIfOpenVPNProtocol(openssl_check_buf, sizeof(openssl_check_buf)))
-				{
-					// Detect OpenSSL packet
-					Debug("Detect OpenSSL on TCP!\n");
-
-					no_native = true;
-
-					if (OvsGetNoOpenVpnTcp() == false)
-					{
-						// Do OpenSSL processing
-						c->Type = CONNECTION_TYPE_OPENVPN;
-						if (OvsPerformTcpServer(c->Cedar, s) == false)
-						{
-							error_details = "OpenVPN_TCP_Aborted";
-						}
-					}
-
-					goto ERROR;
-				}
+				c->Type = CONNECTION_TYPE_OTHER;
+				goto FINAL;
 			}
 		}
-
-
 	}
 
 	// Specify the encryption algorithm
@@ -2956,18 +2958,16 @@ void ConnectionAccept(CONNECTION *c)
 	Unlock(c->Cedar->lock);
 
 	// Start the SSL communication
-	Debug("StartSSL()\n");
+	Copy(&s->SslAcceptSettings, &c->Cedar->SslAcceptSettings, sizeof(SSL_ACCEPT_SETTINGS));
 	if (StartSSL(s, x, k) == false)
 	{
 		// Failed
 		AddNoSsl(c->Cedar, &s->RemoteIP);
-		Debug("Failed to StartSSL.\n");
+		Debug("ConnectionAccept(): StartSSL() failed\n");
 		FreeX(x);
 		FreeK(k);
 
-		error_details = "StartSSL";
-
-		goto ERROR;
+		goto FINAL;
 	}
 
 	FreeX(x);
@@ -2981,29 +2981,18 @@ void ConnectionAccept(CONNECTION *c)
 	if (ServerAccept(c) == false)
 	{
 		// Failed
-		Debug("ServerAccept Failed. Err = %u\n", c->Err);
-		goto ERROR;
+		Debug("ConnectionAccept(): ServerAccept() failed with error %u\n", c->Err);
 	}
 
+FINAL:
 	if (c->flag1 == false)
 	{
 		Debug("%s %u c->flag1 == false\n", __FILE__, __LINE__);
 		Disconnect(s);
 	}
+
 	DelConnection(c->Cedar, c);
 	ReleaseSock(s);
-
-	Free(peek_buf);
-	return;
-
-ERROR:
-	Debug("ConnectionAccept() Error.\n");
-
-
-	Disconnect(s);
-	DelConnection(c->Cedar, c);
-	ReleaseSock(s);
-	Free(peek_buf);
 }
 
 // Stop the threads putting additional connection of all that are currently running
@@ -3167,6 +3156,32 @@ void CleanupConnection(CONNECTION *c)
 	if (c == NULL)
 	{
 		return;
+	}
+
+	if (c->LastRecvFifoTotalSize != 0)
+	{
+		CedarAddFifoBudget(c->Cedar, -((int)c->LastRecvFifoTotalSize));
+		c->LastRecvFifoTotalSize = 0;
+	}
+
+	if (c->LastRecvBlocksNum != 0)
+	{
+		CedarAddQueueBudget(c->Cedar, -((int)c->LastRecvBlocksNum));
+		c->LastRecvBlocksNum = 0;
+	}
+
+	if (c->LastTcpQueueSize != 0)
+	{
+		int diff = -((int)c->LastTcpQueueSize);
+		CedarAddCurrentTcpQueueSize(c->Cedar, diff);
+		c->LastTcpQueueSize = 0;
+	}
+
+	if (c->LastPacketQueueSize != 0)
+	{
+		int diff = -((int)c->LastPacketQueueSize);
+		CedarAddCurrentTcpQueueSize(c->Cedar, diff);
+		c->LastPacketQueueSize = 0;
 	}
 
 	DeleteLock(c->lock);
@@ -3451,9 +3466,6 @@ CONNECTION *NewClientConnectionEx(SESSION *s, char *client_str, UINT client_ver,
 	StrCpy(c->ServerName, sizeof(c->ServerName), s->ClientOption->Hostname);
 	c->ServerPort = s->ClientOption->Port;
 
-	// TLS 1.0 using flag
-	c->DontUseTls1 = s->ClientOption->NoTls1;
-
 	// Create queues
 	c->ReceivedBlocks = NewQueue();
 	c->SendBlocks = NewQueue();
@@ -3461,6 +3473,3 @@ CONNECTION *NewClientConnectionEx(SESSION *s, char *client_str, UINT client_ver,
 
 	return c;
 }
-// Developed by SoftEther VPN Project at University of Tsukuba in Japan.
-// Department of Computer Science has dozens of overly-enthusiastic geeks.
-// Join us: http://www.tsukuba.ac.jp/english/admission/

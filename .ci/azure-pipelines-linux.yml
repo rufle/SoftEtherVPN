@@ -1,0 +1,19 @@
+jobs:
+- job: ubuntu_x86_64
+  displayName: 'Ubuntu (x86_64)'
+  pool:
+    vmImage: ubuntu-16.04
+  steps:
+  - script: |
+      cd $BUILD_BINARIESDIRECTORY
+      sudo apt -y install cmake gcc g++ ninja-build libncurses5-dev libreadline-dev libssl-dev make zlib1g-dev
+      cmake -G "Ninja" -DCMAKE_BUILD_TYPE=RelWithDebInfo $BUILD_SOURCESDIRECTORY
+      cmake --build .
+      cpack -C Release -G DEB
+    displayName: 'Build'
+  - script: |
+      .ci/appveyor-deb-install-test.sh
+      sudo apt-get -y install autoconf libtool liblzo2-dev libpam-dev fping unzip # To build OpenVPN
+      sudo BUILD_BINARIESDIRECTORY=$BUILD_BINARIESDIRECTORY .ci/start-se-openvpn.sh
+      sudo BUILD_BINARIESDIRECTORY=$BUILD_BINARIESDIRECTORY .ci/run-openvpn-tests.sh
+    displayName: 'Test'
